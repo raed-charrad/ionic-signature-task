@@ -5,7 +5,7 @@ import HomePage from '../views/HomePage.vue'
 const routes: Array<RouteRecordRaw> = [
   {
     path: '/',
-    redirect: '/signature'
+    redirect: '/signatures'
   },
   {
     path: '/home',
@@ -13,9 +13,9 @@ const routes: Array<RouteRecordRaw> = [
     component: HomePage
   },
   {
-    path: '/signature',
-    name: 'Signature',
-    component: () => import(/* webpackChunkName: "signature" */ '../views/TestPage.vue')
+    path: '/signatures',
+    name: 'Signatures',
+    component: () => import(/* webpackChunkName: "signatures" */ '../views/ListPage.vue')
   },
 ]
 
