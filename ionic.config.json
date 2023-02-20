@@ -1,0 +1,7 @@
+{
+  "name": "signature-task",
+  "integrations": {
+    "capacitor": {}
+  },
+  "type": "vue"
+}
