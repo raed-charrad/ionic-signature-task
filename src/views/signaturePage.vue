@@ -6,7 +6,7 @@
                 <ion-button @click="undo">Undo</ion-button>
             </ion-item>
         </ion-list>
-        <VueSignaturePad ref="signaturePad" class="sig" />
+        <VueSignaturePad ref="signaturePad" class="sig" :options="{onBegin: () => {$refs.signaturePad.resizeCanvas()}}"/>
     </div>
 </template>
 
@@ -25,7 +25,6 @@ export default defineComponent({
     mounted () {
         const signaturePad = this.$refs.signaturePad;
         signaturePad.undoSignature();
-        console.log(this.refs);
     },
     methods: {
         save () {
