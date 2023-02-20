@@ -5,13 +5,18 @@ import HomePage from '../views/HomePage.vue'
 const routes: Array<RouteRecordRaw> = [
   {
     path: '/',
-    redirect: '/home'
+    redirect: '/signature'
   },
   {
     path: '/home',
     name: 'Home',
     component: HomePage
-  }
+  },
+  {
+    path: '/signature',
+    name: 'Signature',
+    component: () => import(/* webpackChunkName: "signature" */ '../views/TestPage.vue')
+  },
 ]
 
 const router = createRouter({
