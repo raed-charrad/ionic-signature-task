@@ -24,12 +24,22 @@ const store = createStore({
                 signature: signature.signature,
             }
             state.signatures.unshift(signatureObj)
+        },
+        deleteSignature(state, signatureId) {
+            const signatureIndex = state.signatures.findIndex(
+                (signature) => signature.id === signatureId
+            )
+            state.signatures.splice(signatureIndex, 1)
         }
     },
     actions: {
         saveSignature(context, signature) {
             context.commit('saveSignature', signature)
+        },
+        deleteSignature(context, signatureId) {
+            context.commit('deleteSignature', signatureId)
         }
+
     },
     getters: {
         signatures(state) {

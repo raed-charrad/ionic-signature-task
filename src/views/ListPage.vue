@@ -26,14 +26,8 @@
                         </ion-label>
                     </ion-item>
                     <ion-item-options side="end">
-                        <ion-item-option color="warning" class="center">
-                            <ion-button fill="clear" color="light" class="center"
-                            >
-                                <ion-icon :icon="pencil" ></ion-icon>
-                            </ion-button>
-                        </ion-item-option>
                         <ion-item-option color="danger" class="center">
-                            <ion-button fill="clear" color="light"  class="center">
+                            <ion-button fill="clear" color="light"  class="center" @click="deleteSignature(signature.id)">
                                 <ion-icon :icon="trash"></ion-icon>
                             </ion-button>
                         </ion-item-option>
@@ -59,6 +53,7 @@ import { trash, pencil } from 'ionicons/icons';
 import { modalController } from '@ionic/vue';
 import SignatureModal from './modals/AddSignatureModal.vue'
 import store from '../store'
+
 export default defineComponent({
     components: {
         IonPage,
@@ -95,13 +90,17 @@ export default defineComponent({
                 modalElement.present();
               });
 
+        };
+        const deleteSignature = (signatureId : string) => {
+            store.dispatch('deleteSignature', signatureId)
         }
          
 
         return {
             trash,
             pencil,
-            add
+            add,
+            deleteSignature,
         }
     }
 })
