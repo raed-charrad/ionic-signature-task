@@ -1,28 +1,28 @@
 <template>
   <ion-page>
-    <ion-header :translucent="true">
-      <ion-toolbar>
-        <ion-title>Blank</ion-title>
-      </ion-toolbar>
-    </ion-header>
+    <ion-tabs>
+      <ion-router-outlet></ion-router-outlet>
+      <ion-tab-bar slot="bottom">
+        <ion-tab-button tab="home" href="/list">
+          <ion-icon :icon="playCircle" />
+          <ion-label>List Pdfs</ion-label>
+        </ion-tab-button>
 
-    <ion-content :fullscreen="true">
-      <ion-header collapse="condense">
-        <ion-toolbar>
-          <ion-title size="large">Blank</ion-title>
-        </ion-toolbar>
-      </ion-header>
-
-      <div id="container">
-        <strong>Ready to create an app?</strong>
-        <p>Start with Ionic <a target="_blank" rel="noopener noreferrer" href="https://ionicframework.com/docs/components">UI Components</a></p>
-      </div>
-    </ion-content>
+        <ion-tab-button tab="radio" href="/signatures">
+          <ion-icon :icon="radio" />
+          <ion-label>Signature</ion-label>
+        </ion-tab-button>
+      </ion-tab-bar>
+    </ion-tabs>
   </ion-page>
 </template>
 
 <script setup lang="ts">
-import { IonContent, IonHeader, IonPage, IonTitle, IonToolbar } from '@ionic/vue';
+  import { IonPage, IonTabs, IonRouterOutlet, IonTabBar, IonTabButton, IonLabel, IonIcon } from '@ionic/vue';
+  import { playCircle, radio,
+    //  library, search 
+  } from 'ionicons/icons';
+
 </script>
 
 <style scoped>

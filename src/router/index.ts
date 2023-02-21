@@ -5,17 +5,37 @@ import HomePage from '../views/HomePage.vue'
 const routes: Array<RouteRecordRaw> = [
   {
     path: '/',
-    redirect: '/signatures'
+    redirect: '/list'
   },
   {
-    path: '/home',
-    name: 'Home',
-    component: HomePage
-  },
-  {
-    path: '/signatures',
-    name: 'Signatures',
-    component: () => import(/* webpackChunkName: "signatures" */ '../views/ListPage.vue')
+    path: '/',
+    component: HomePage,
+    children: [
+      {
+        path: '',
+        redirect: '/list'
+      },
+      {
+        path: 'signatures',
+        name: 'Signatures',
+        component: () => import('../views/ListPage.vue')
+      },
+      {
+        path: '/pdf/:id',
+        name: 'Pdf',
+        component: () => import('../views/pdfs/PdfViewerPage.vue')
+      },
+      {
+        path: '/add',
+        name: 'AddPdf',
+        component: () => import('../views/pdfs/addPdfPage.vue')
+      },
+      {
+        path: '/list',
+        name: 'List',
+        component: () => import('../views/pdfs/ListPdfPage.vue')
+      }
+    ]
   },
 ]
 

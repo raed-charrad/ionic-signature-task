@@ -82,7 +82,6 @@ import { save } from 'ionicons/icons';
                             const signature =  datas.data
                             this.$emit('signature', signature)
                             try {
-                                console.log(signature);
                                 store.dispatch('saveSignature', {name: this.name, signature});
                                 const toast = toastController.create({
                                     message: 'Signature saved',

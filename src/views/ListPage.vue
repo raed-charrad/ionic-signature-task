@@ -14,7 +14,6 @@
         <ion-content class="ion-padding">
             <ion-list lines="inset">
                 <ion-item-sliding  v-for="signature in signatures"
-                :router-link="`/memories/${signature.id}`"
                 :key="signature.id"> 
                     <ion-item>
                         <ion-thumbnail slot="start">
@@ -36,19 +35,12 @@
             </ion-list>
 
         </ion-content>
-        <ion-footer>
-            <ion-toolbar>
-                <ion-title>
-                Footer
-                </ion-title>
-            </ion-toolbar>
-        </ion-footer>
     </ion-page>
 </template>
 
 <script lang="ts">
 import { defineComponent } from 'vue'
-import { IonPage,IonContent, IonFooter, IonHeader, IonTitle, IonToolbar, IonList, IonItemSliding, IonItem, IonThumbnail, IonImg, IonLabel, IonItemOptions, IonItemOption, IonButton, IonIcon} from '@ionic/vue';
+import { IonPage,IonContent, IonHeader, IonTitle, IonToolbar, IonList, IonItemSliding, IonItem, IonThumbnail, IonImg, IonLabel, IonItemOptions, IonItemOption, IonButton, IonIcon} from '@ionic/vue';
 import { trash, pencil } from 'ionicons/icons';
 import { modalController } from '@ionic/vue';
 import SignatureModal from './modals/AddSignatureModal.vue'
@@ -58,7 +50,6 @@ export default defineComponent({
     components: {
         IonPage,
         IonContent,
-        IonFooter,
         IonHeader,
         IonTitle,
         IonToolbar,
@@ -75,7 +66,6 @@ export default defineComponent({
     },
     computed: {
         signatures() {
-            console.log(store.getters.signatures)
             return store.getters.signatures
         }
     },
