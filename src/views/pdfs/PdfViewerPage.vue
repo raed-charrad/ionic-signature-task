@@ -29,38 +29,23 @@
           :text="true"
         />
       </div>
-      <!-- <ion-list lines="inset" id="signatures">
-                <div class="side">
-                    <div class="box"
-                        draggable="true"
-                        @dragstart="dragstartOutDP">
-                        <ion-item  v-for="signature in signatures"
-                            :key="signature.id"> 
-                            <ion-avatar slot="start">
-                                <ion-img :src="signature.signature"></ion-img>
-                            </ion-avatar>
-                            <ion-label>
-                    
-                                <h2>{{ signature.name }}</h2>
-                            </ion-label>
-                        </ion-item>
-                    </div>
-                </div>
-            </ion-list> -->
-      <div class="signatures">
+      <div class="signatures" id="signatures">
+        <button id="prev" @click="previousSignature()" class="sig-btn">
+          <ion-icon size="large"  :icon="chevronBackOutline"></ion-icon>
+        </button>
         <div
           class="signature_item"
-          v-for="signature in signatures"
-          :key="signature.id"
+          v-for="(signature,index) in signatures"
+          :key="signature.id" v-show="index == sig || index == sig+1"
         >
-          <ion-img  :src="signature.signature" :id="`signature_${signature.id}`"></ion-img>
-        </div>
-      </div>
-      <div class="review__button">
-        <button id="prev" @click="previousSignature()">PREV</button>
 
-        <button id="next" @click="nextSignature()">NEXT</button>
+          <ion-img :src="signature.signature" :id="`signature_${signature.id}`"></ion-img>
+        </div>
+        <button id="next" @click="nextSignature()" class="sig-btn">
+          <ion-icon size="large" :icon="chevronForwardOutline"></ion-icon>
+        </button>
       </div>
+      
       <div class="text-center footer">
         <ion-button
           class="primary"
@@ -79,32 +64,11 @@
         </ion-button>
       </div>
       <ion-fab slot="fixed" vertical="bottom" horizontal="end">
-        <ion-fab-button size="small" id="open-modal">
+        <ion-fab-button size="small" id="open-signature" @click="OpenSignature()">
           <ion-icon :icon="fingerPrintOutline"></ion-icon>
         </ion-fab-button>
       </ion-fab>
-      <!-- <ion-modal ref="modal" trigger="open-modal" :initial-breakpoint="0.25" :breakpoints="[0, 0.25, 0.5]">
-                <ion-content class="ion-padding">
-                <ion-list lines="inset" id="signatures">
-                    <div class="side">
-                        <div class="box"
-                            draggable="true"
-                            @dragstart="dragstartOutDP">
-                            <ion-item  v-for="signature in signatures"
-                                :key="signature.id"> 
-                                <ion-avatar slot="start">
-                                    <ion-img :src="signature.signature"></ion-img>
-                                </ion-avatar>
-                                <ion-label>
-                        
-                                    <h2>{{ signature.name }}</h2>
-                                </ion-label>
-                            </ion-item>
-                        </div>
-                    </div>
-                </ion-list>
-                </ion-content>
-                </ion-modal> -->
+  
     </ion-content>
   </ion-page>
 </template>
@@ -120,12 +84,7 @@ import {
     IonPage,
     IonFab,
     IonFabButton,
-    // IonModal,
-    // IonItem,
-    // IonList,
-    // IonAvatar,
     IonImg,
-    // IonLabel,
 } from '@ionic/vue';
 import { ref , reactive} from 'vue';
 import { removeCircleOutline,addCircleOutline , chevronForwardOutline , chevronBackOutline , fingerPrintOutline} from 'ionicons/icons';
@@ -140,16 +99,12 @@ export default defineComponent({
         IonPage,
         IonFab,
         IonFabButton,
-        // IonModal,
-        // IonItem,
-        // IonList,
-        // IonAvatar,
         IonImg,
-        // IonLabel,
     },
     mounted() {
         this.scale = (window.innerWidth *1.5) / 1000 ;
-
+        const signatures = document.getElementById('signatures');
+        signatures.style.display = 'none';
     },
     watch: {
         '$route'(currentRoute){
@@ -187,17 +142,8 @@ export default defineComponent({
         canvasWidth.value  = window.innerWidth;
         canvasHeight.value = window.innerHeight;
         const dragstartOutDP =(event)=> {
-            // offset = {
-            //     x: event.offsetX,
-            //     y: event.offsetY,
-            // }
             offset.x = event.offsetX
             offset.y = event.offsetY
-            // event.dataTransfer.effectAllowed ='move';
-            // event.dataTransfer.setData('text/plain', JSON.stringify(offset));
-            // event.dataTransfer.dropEffect ='move';
-            // event.preventDefault();
-
         };
         const renderPdf = (loading) => {
            if (!loading){
@@ -269,22 +215,27 @@ export default defineComponent({
         const chartScale=(item)=> {
             console.info('[Event]', 'chart-scale', item)
         };
-        // eslint-disable-next-line prefer-const
-        let sig = ref(0);
+        const sig = ref(0);
         const previousSignature=()=> {
-            sig.value -= 1;
+            if (sig.value === 0) {
+                return;
+            }
+            sig.value -= 2;
             if (sig.value < 0) {
                 sig.value = 0;
             }
             carousel(sig.value)
         };
         const nextSignature=()=> {
-            sig.value += 1;
+           if((store.getters.signatures.length)-2  <= sig.value){
+             return;
+            }
+            sig.value += 2;
             carousel(sig.value)
+
         };
         const carousel=(signature) =>{
             const signatures = document.querySelectorAll('.signature_item');
-            // console.info('[Event]', 'carousel', signature)
             for (let i = 0; i < signatures.length; i++) {
                 signatures[i].style.display = 'none';
             }
@@ -318,6 +269,18 @@ export default defineComponent({
 
         }
         carousel(sig.value)
+        const OpenSignature = () => {
+          const signatures = document.getElementById('signatures');
+            if (signatures) {
+              if (signatures.style.display === 'none') {
+                signatures.style.display = 'flex';
+              } else {
+                signatures.style.display = 'none';
+              }
+            }
+           
+            
+        }
 
         return {
             pdfUrl,
@@ -349,7 +312,8 @@ export default defineComponent({
             previousSignature,
             nextSignature,
             carousel,
-            sig
+            sig,
+            OpenSignature
         }
     }
 })
@@ -400,6 +364,7 @@ export default defineComponent({
   flex-direction: row;
   padding: 30px;
   background-color: #aaaaaa4f;
+  width: 100%;
 }
 .signature_item {
   width: 30%;
@@ -414,5 +379,9 @@ export default defineComponent({
 }
 .hide_signature{
     display: none;
+}
+.sig-btn{
+    background-color: transparent;
+    margin: 20px;
 }
 </style>
