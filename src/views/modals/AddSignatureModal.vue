@@ -51,6 +51,7 @@ import {
   IonInput,
   modalController,
   toastController,
+  IonList
 } from "@ionic/vue";
 import { defineComponent, ref } from "vue";
 import { VueSignaturePad } from "vue-signature-pad";
@@ -60,6 +61,7 @@ import { save } from "ionicons/icons";
 export default defineComponent({
   name: "ModalPage",
   components: {
+    IonList,
     IonContent,
     IonHeader,
     IonTitle,

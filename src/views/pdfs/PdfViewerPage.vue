@@ -149,38 +149,47 @@ export default defineComponent({
            if (!loading){
             const canvas = document.getElementsByTagName('canvas');
             if (canvas) {
-                const textLayer = document.getElementsByClassName('textLayer');
-                if (textLayer) {
-                    for(let  i = 0; i < textLayer.length; i++){
-                        textLayer[i].style.display = 'none';
-                    }
-                }
-                const annotationLayer = document.getElementsByClassName('annotationLayer');
-                if (annotationLayer) {
-                    for(let  i = 0; i < annotationLayer.length; i++){
-                        annotationLayer[i].style.display = 'none';
-                    }
-                }
-                // canvas[0].addEventListener("dragstart", (e)=> {
-                //     console.info('[Event]', 'dragstart', e)
-                //     e.dataTransfer.effectAllowed ='move';
-                //     e.dataTransfer.setData('text/plain', JSON.stringify(offset));
-                //     e.dataTransfer.dropEffect ='move';
-                //     e.preventDefault();
-                // });
+                
+            
                 // canvas[0].addEventListener("dragend", (e)=> {
                 //     console.info('[Event]', 'dragend', e)
                 //     e.preventDefault();
                 // });
-                // canvas[0].addEventListener("dragenter", (e)=> {
-                //     console.info('[Event]', 'dragenter', e)
-                //     e.preventDefault();
-                // });
-                // canvas[0].addEventListener("dragleave", (e)=> {
-                //     console.info('[Event]', 'dragleave', e)
-                //     e.preventDefault();
-                // });
+                canvas[0].parentNode.parentNode.addEventListener("dragenter", (e)=> {
+                  console.log('dragenter')
+                  const textLayer = document.getElementsByClassName('textLayer');
+                    if (textLayer) {
+                      console.log('textLayer',textLayer)
+                        for(let  i = 0; i < textLayer.length; i++){
+                            textLayer[i].style.display = 'none';
+                        }
+                    }
+                    const annotationLayer = document.getElementsByClassName('annotationLayer');
+                    if (annotationLayer) {
+                        for(let  i = 0; i < annotationLayer.length; i++){
+                            annotationLayer[i].style.display = 'none';
+                        }
+                    }
+                    e.preventDefault();
+                });
+                canvas[0].addEventListener("dragleave", (e)=> {
+                  console.log('dragend')
+                  const textLayer = document.getElementsByClassName('textLayer');
+                    if (textLayer) {
+                        for(let  i = 0; i < textLayer.length; i++){
+                            textLayer[i].style.display = '';
+                        }
+                    }
+                    const annotationLayer = document.getElementsByClassName('annotationLayer');
+                    if (annotationLayer) {
+                        for(let  i = 0; i < annotationLayer.length; i++){
+                            annotationLayer[i].style.display = '';
+                        }
+                    }
+                    e.preventDefault();
+                });
                 canvas[0].addEventListener("dragover", (e)=> {
+                    
                     e.preventDefault();
                 });
                 canvas[0].addEventListener("drop", (e)=> {
@@ -195,6 +204,18 @@ export default defineComponent({
 
                     };
                     img.src = data;
+                    const textLayer = document.getElementsByClassName('textLayer');
+                    if (textLayer) {
+                        for(let  i = 0; i < textLayer.length; i++){
+                            textLayer[i].style.display = '';
+                        }
+                    }
+                    const annotationLayer = document.getElementsByClassName('annotationLayer');
+                    if (annotationLayer) {
+                        for(let  i = 0; i < annotationLayer.length; i++){
+                            annotationLayer[i].style.display = '';
+                        }
+                    }
 
                 });
             }}

@@ -8,6 +8,11 @@ const routes: Array<RouteRecordRaw> = [
     redirect: '/list'
   },
   {
+    path: '/pdf/:id',
+    name: 'Pdf',
+    component: () => import('../views/pdfs/PdfViewerPage.vue')
+  },
+  {
     path: '/',
     component: HomePage,
     children: [
@@ -20,11 +25,7 @@ const routes: Array<RouteRecordRaw> = [
         name: 'Signatures',
         component: () => import('../views/ListPage.vue')
       },
-      {
-        path: '/pdf/:id',
-        name: 'Pdf',
-        component: () => import('../views/pdfs/PdfViewerPage.vue')
-      },
+      
       {
         path: '/add',
         name: 'AddPdf',
