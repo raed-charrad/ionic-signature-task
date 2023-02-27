@@ -18,7 +18,7 @@
           <ion-icon :icon="addCircleOutline"></ion-icon>
         </button>
       </div>
-      <div class="text-center" ref="myPdf">
+      <div class="text-center" id="myPdf" ref="myPdf">
         <pdf
           :scale="scale"
           :src="pdfUrl"
@@ -39,7 +39,7 @@
           :key="signature.id" v-show="index == sig || index == sig+1"
         >
 
-          <ion-img :src="signature.signature" :id="`signature_${signature.id}`"></ion-img>
+          <ion-img :src="signature.signature" :id="`signature_${signature.id}`" style="height: 60px;"></ion-img>
         </div>
         <button id="next" @click="nextSignature()" class="sig-btn">
           <ion-icon size="large" :icon="chevronForwardOutline"></ion-icon>
@@ -135,6 +135,8 @@ export default defineComponent({
         const enablement = ref(true)
         const numPages = ref(0);
         const pdfUrl = store.getters.Pdf(pdfId).url
+        const windowHeight = window.innerHeight;
+        console.log('windowHeight',windowHeight)
         store.getters.Pdf(pdfId)
         const getPages = (pages) => {
             numPages.value = pages
@@ -149,12 +151,6 @@ export default defineComponent({
            if (!loading){
             const canvas = document.getElementsByTagName('canvas');
             if (canvas) {
-                
-            
-                // canvas[0].addEventListener("dragend", (e)=> {
-                //     console.info('[Event]', 'dragend', e)
-                //     e.preventDefault();
-                // });
                 canvas[0].parentNode.parentNode.addEventListener("dragenter", (e)=> {
                   console.log('dragenter')
                   const textLayer = document.getElementsByClassName('textLayer');
@@ -197,14 +193,20 @@ export default defineComponent({
                     const data = e.dataTransfer.getData('text/plain');
                     const ctx = canvas[0].getContext('2d');
                     const img = new Image();
+                    const textLayer = document.getElementsByClassName('textLayer');
+                    const textLayerHeight = document.getElementsByClassName('textLayer')[0].offsetHeight;
+                    console.log('textLayerHeight',textLayerHeight)
+                    console.log('coef',textLayerHeight/windowHeight)
                     img.onload = () => {
-                      const x = e.offsetX*(ctx.canvas.width/canvas[0].offsetWidth)-((1/4) * img.width*(200/img.width));
-                      const y = e.offsetY*(ctx.canvas.height/canvas[0].offsetHeight)-((1/4) * img.height*(200/img.width));
+                      // const x = e.offsetX*(ctx.canvas.width/canvas[0].offsetWidth)-((1/4) * img.width*(200/img.width));
+                      // const y = e.offsetY*(ctx.canvas.height/canvas[0].offsetHeight)-((1/4) * img.height*(200/img.width));
+                      
+                      const x = e.offsetX*(textLayerHeight/windowHeight)-((1/4) * img.width*(200/img.width));
+                      const y = e.offsetY*(textLayerHeight/windowHeight)-((1/4) * img.height*(200/img.width));
                         ctx.drawImage(img, x, y,img.width*(200/img.width),img.height*(200/img.width));
 
                     };
                     img.src = data;
-                    const textLayer = document.getElementsByClassName('textLayer');
                     if (textLayer) {
                         for(let  i = 0; i < textLayer.length; i++){
                             textLayer[i].style.display = '';
@@ -218,23 +220,43 @@ export default defineComponent({
                     }
 
                 });
-            }}
-        };
-        const dropInCanvas=(event, position)=> {
-            const canvas = document.getElementsByTagName('canvas')
-            const ctx = canvas[0].getContext('2d');
-            const image = document.getElementById('signature');
-            ctx.drawImage(image,position.x, position.y, 100, 100, 150,150 ,image.width, image.height);
+            }
+            const images = document.getElementsByClassName('signature_item');
+            if (images) {
+                for(let  i = 0; i < images.length; i++){
+                    images[i].addEventListener("touchmove", (e)=> {
+                      const touchLocation = e.targetTouches[0];
+                      e.preventDefault();
+                    });
+                    images[i].addEventListener("touchend", (e)=> {
+                      console.log("touchend")
+                      const ctx = canvas[0].getContext('2d');
+                      const touchLocation = e.changedTouches[0];
+                      console.log("touchLocation",touchLocation)
+                      console.log("ctx.canvas.width",ctx.canvas.width)
+                      const imgMobile = new Image();
+                      imgMobile.onload = () => {
+                        // const x = touchLocation.pageX*(ctx.canvas.width/canvas[0].offsetWidth)-((1/4) * imgMobile.width*(200/imgMobile.width));
+                        // const y = touchLocation.pageY*(ctx.canvas.width/canvas[0].offsetWidth)-((1/4) * imgMobile.width*(200/imgMobile.width)+ document.getElementById('myPdf').offsetTop);
+                        const offsetTop = window.offsetTop;
+                        
+                        const textLayer = document.getElementsByClassName('textLayer');
+                        const textLayerHeight = document.getElementsByClassName('textLayer')[0].offsetHeight;
+                        console.log('textLayerHeight',textLayerHeight)
+                    console.log('coef',textLayerHeight/windowHeight)
+                        const x = touchLocation.pageX*(ctx.canvas.width/canvas[0].offsetWidth)-((1/4) * imgMobile.width*(200/imgMobile.width));
+                        const y = touchLocation.pageY*(textLayerHeight/canvas[0].offsetWidth)-((1/4) * imgMobile.width*(200/imgMobile.width)+ document.getElementById('myPdf').offsetTop);
+                        
+                        const offsetY = ctx.drawImage(imgMobile, x, y,imgMobile.width*(200/imgMobile.width),imgMobile.height*(200/imgMobile.width));
+                      };
+                      imgMobile.src = images[i].firstChild.src;
+                        e.preventDefault();
+                    });
 
-        };
-        const canvasScale=(scale)=> {
-            console.info('[Event]', 'canvas-scale', scale)
-        };
-        const chartMove=(item)=> {
-            console.info('[Event]', 'chart-move', item)
-        };
-        const chartScale=(item)=> {
-            console.info('[Event]', 'chart-scale', item)
+                }
+            }
+          }
+
         };
         const sig = ref(0);
         const previousSignature=()=> {
@@ -260,33 +282,6 @@ export default defineComponent({
             for (let i = 0; i < signatures.length; i++) {
                 signatures[i].style.display = 'none';
             }
-            // document.getElementById(`signature_${signature}`).style.display = 'block';
-            // document.getElementById(`signature_${signature}`).style.display = 'block';
-            // document.getElementById(`signature_${signature}`).style.transform = `translateX(${document.getElementById(`signature_${signature}`).offsetLeft}px)`;
-
-            // if (signature < 0) {
-            //     signature = signatures.length - 1;
-            //     sig.value = signatures.length - 1;
-            //     // document.getElementsByClassName('signature_item')[signature].style.display = 'block';
-            //     return;
-            // }
-            // document.getElementsByClassName('signature_item')[signature].style.display = 'block';
-
-            // if (carousel) {
-            //     carousel.style.display = 'none';
-            // }
-            // let signature = document.getElementById('signature_item');
-            // if (signature) {
-            //     signature.style.display = 'none';
-            // }
-            // signature = document.getElementById(signature);
-            // signature.style.display = 'block';
-            // carousel = document.getElementById('carousel');
-            // carousel.style.display = 'block';
-            // signature.style.display = 'block';
-            // signature.style.transform = `translateX(${signature.offsetLeft}px) translateY(${signature.offsetTop}px)`;
-            // signature.style.transition = 'transform 0.5s ease-in-out';
-
 
         }
         carousel(sig.value)
@@ -299,6 +294,7 @@ export default defineComponent({
                 signatures.style.display = 'none';
               }
             }
+            
            
             
         }
@@ -325,10 +321,6 @@ export default defineComponent({
             chartId,
             //
             dragstartOutDP,
-            dropInCanvas,
-            canvasScale,
-            chartMove,
-            chartScale,
             renderPdf,
             previousSignature,
             nextSignature,
@@ -386,10 +378,10 @@ export default defineComponent({
   padding: 30px;
   background-color: #aaaaaa4f;
   width: 100%;
+  height: 20%;
 }
 .signature_item {
   width: 30%;
-  height: 30%;
   margin: 0 5px;
 }
 .block{
