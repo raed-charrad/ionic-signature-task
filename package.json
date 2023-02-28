@@ -24,6 +24,7 @@
     "ionicons": "^6.0.3",
     "pdfvuer": "^2.0.1",
     "vue": "^3.2.21",
+    "vue-pdf-embed": "^1.1.5",
     "vue-router": "^4.0.12",
     "vue-signature-pad": "^3.0.2",
     "vuex": "^4.0.2"
