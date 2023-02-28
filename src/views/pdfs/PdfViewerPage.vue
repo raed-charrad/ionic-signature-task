@@ -2,31 +2,38 @@
   <ion-page>
     <ion-content class="content">
       <div class="header">
-        <button
-          fill="outline"
-          class="loop"
-          @click="scale = scale > 0.25 ? scale - 0.25 : 0.25"
-        >
-          <ion-icon :icon="removeCircleOutline"></ion-icon>
-        </button>
-        <button
-          fill="outline"
-          class="loop"
-          shape="round"
-          @click="scale = scale < 2 ? scale + 0.25 : 2"
-        >
-          <ion-icon :icon="addCircleOutline"></ion-icon>
-        </button>
+        <template v-if="isLoading">
+          Loading...
+        </template>
+
+        <template v-else>
+          <div>
+            <span v-if="showAllPages">
+              {{ numPages }} page(s)
+            </span>
+  
+            <span v-else>
+              <button class="butn" :disabled="currentPage <= 1" @click="currentPage--">❮</button>
+  
+              {{ currentPage }} / {{ numPages }}
+  
+              <button class="butn" :disabled="currentPage >= numPages" @click="currentPage++">❯</button>
+            </span>
+          </div>
+
+          <label class="right">
+            <input v-model="showAllPages" type="checkbox">
+
+            Show all pages
+          </label>
+        </template>
       </div>
       <div class="text-center" id="myPdf" ref="myPdf">
-        <pdf
-          :scale="scale"
-          :src="pdfUrl"
-          @numpages="getPages"
+        <VuePdfEmbed
+          ref="pdfRef"
+          :source="pdfUrl"
           :page="currentPage"
-          :annotation="true"
-          @loading="renderPdf"
-          :text="true"
+          @rendered="handleDocumentRender"
         />
       </div>
       <div class="signatures" id="signatures">
@@ -46,23 +53,7 @@
         </button>
       </div>
       
-      <div class="text-center footer">
-        <ion-button
-          class="primary"
-          @click="currentPage = currentPage > 1 ? currentPage - 1 : 1"
-        >
-          <ion-icon :icon="chevronBackOutline"></ion-icon>
-        </ion-button>
-        <div>{{ currentPage }} / {{ numPages }}</div>
-        <ion-button
-          class="primary"
-          @click="
-            currentPage = currentPage < numPages ? currentPage + 1 : numPages
-          "
-        >
-          <ion-icon :icon="chevronForwardOutline"></ion-icon>
-        </ion-button>
-      </div>
+      
       <ion-fab slot="fixed" vertical="bottom" horizontal="end">
         <ion-fab-button size="small" id="open-signature" @click="OpenSignature()">
           <ion-icon :icon="fingerPrintOutline"></ion-icon>
@@ -73,9 +64,10 @@
   </ion-page>
 </template>
 
-<script lang="js">
+<script lang="ts">
 import { defineComponent } from 'vue'
-import pdf   from 'pdfvuer';
+// import pdf   from 'pdfvuer';
+import VuePdfEmbed from 'vue-pdf-embed'
 
 import {
     IonContent,
@@ -86,16 +78,15 @@ import {
     IonFabButton,
     IonImg,
 } from '@ionic/vue';
-import { ref , reactive} from 'vue';
+import { onMounted,ref , reactive} from 'vue';
 import { removeCircleOutline,addCircleOutline , chevronForwardOutline , chevronBackOutline , fingerPrintOutline} from 'ionicons/icons';
 import { useRoute } from 'vue-router';
 import store from '@/store';
 export default defineComponent({
     components: {
         IonContent,
-        pdf ,
+        VuePdfEmbed ,
         IonIcon,
-        IonButton,
         IonPage,
         IonFab,
         IonFabButton,
@@ -104,12 +95,16 @@ export default defineComponent({
     mounted() {
         this.scale = (window.innerWidth *1.5) / 1000 ;
         const signatures = document.getElementById('signatures');
-        signatures.style.display = 'none';
+        signatures!.style.display = 'none';
     },
     watch: {
         '$route'(currentRoute){
             this.pdfId = currentRoute.params.id
-        }
+        },
+        showAllPages() {
+            this.currentPage = this.showAllPages ? 0 : 1;
+            console.log('showAllPages',this.currentPage)
+        },
     },
     computed: {
         Pdf(){
@@ -120,50 +115,65 @@ export default defineComponent({
         }
     },
     setup () {
-        //
-        const canvasWidth  = ref(1)
-        const canvasHeight = ref(1)
-        const chartList    = ref([])
+        console.log('setup')
         const offset       = reactive({ x: 0, y: 0 })
-        const chartId      = ref(0)
         //
+        const pdfRef = ref();
+        // 
+        const isLoading = ref(true);
+        const showAllPages = ref(false);
+        // 
         const route = useRoute();
         const myPdf = ref(null);
         const scale = ref(1);
         const currentPage = ref(1);
         const pdfId = route.params.id
-        const enablement = ref(true)
         const numPages = ref(0);
         const pdfUrl = store.getters.Pdf(pdfId).url
         const windowHeight = window.innerHeight;
-        console.log('windowHeight',windowHeight)
         store.getters.Pdf(pdfId)
-        const getPages = (pages) => {
-            numPages.value = pages
+        const handleDocumentRender = () => {
+          isLoading.value = false;
+            numPages.value = pdfRef.value.pageCount;
+            console.log(pdfRef.value)
         };
-        canvasWidth.value  = window.innerWidth;
-        canvasHeight.value = window.innerHeight;
-        const dragstartOutDP =(event)=> {
+        const dragstartOutDP =(event: any)=> {
+            console.log('dragstartOutDP')
             offset.x = event.offsetX
             offset.y = event.offsetY
         };
-        const renderPdf = (loading) => {
+        const renderPdf = (loading : boolean) => {
+          console.log('before render',loading)
            if (!loading){
+            console.log("renderPdf")
             const canvas = document.getElementsByTagName('canvas');
             if (canvas) {
-                canvas[0].parentNode.parentNode.addEventListener("dragenter", (e)=> {
+              const annotationLayer = document.getElementsByClassName('annotationLayer');
+
+                console.log('annotationLayer',annotationLayer);
+                if (annotationLayer.length==0) {
+                  console.log('annotationLayer');
+                  const  append = document.createElement('div')
+                  append.classList.add('annotationLayer')
+                  console.log('append',append);
+                  canvas[0].parentNode?.parentNode?.appendChild(  
+                  (append)
+                  )
+                }
+
+                canvas[0].parentNode?.parentNode?.addEventListener("dragenter", (e)=> {
                   console.log('dragenter')
                   const textLayer = document.getElementsByClassName('textLayer');
                     if (textLayer) {
                       console.log('textLayer',textLayer)
                         for(let  i = 0; i < textLayer.length; i++){
-                            textLayer[i].style.display = 'none';
+                            (textLayer[i] as HTMLElement).style.display = 'none';
                         }
                     }
                     const annotationLayer = document.getElementsByClassName('annotationLayer');
                     if (annotationLayer) {
                         for(let  i = 0; i < annotationLayer.length; i++){
-                            annotationLayer[i].style.display = 'none';
+                            (annotationLayer[i] as HTMLElement).style.display = 'none';
                         }
                     }
                     e.preventDefault();
@@ -173,13 +183,13 @@ export default defineComponent({
                   const textLayer = document.getElementsByClassName('textLayer');
                     if (textLayer) {
                         for(let  i = 0; i < textLayer.length; i++){
-                            textLayer[i].style.display = '';
+                          (textLayer[i] as HTMLElement).style.display = '';
                         }
                     }
                     const annotationLayer = document.getElementsByClassName('annotationLayer');
                     if (annotationLayer) {
                         for(let  i = 0; i < annotationLayer.length; i++){
-                            annotationLayer[i].style.display = '';
+                          (annotationLayer[i] as HTMLElement).style.display = '';
                         }
                     }
                     e.preventDefault();
@@ -190,66 +200,94 @@ export default defineComponent({
                 });
                 canvas[0].addEventListener("drop", (e)=> {
                     e.preventDefault();
-                    const data = e.dataTransfer.getData('text/plain');
+                    const annot = document.querySelector('.annotationLayer');
+                    const data = e.dataTransfer?.getData('text/plain');
                     const ctx = canvas[0].getContext('2d');
-                    const img = new Image();
-                    const textLayer = document.getElementsByClassName('textLayer');
-                    const textLayerHeight = document.getElementsByClassName('textLayer')[0].offsetHeight;
-                    console.log('textLayerHeight',textLayerHeight)
-                    console.log('coef',textLayerHeight/windowHeight)
-                    img.onload = () => {
-                      // const x = e.offsetX*(ctx.canvas.width/canvas[0].offsetWidth)-((1/4) * img.width*(200/img.width));
-                      // const y = e.offsetY*(ctx.canvas.height/canvas[0].offsetHeight)-((1/4) * img.height*(200/img.width));
-                      
-                      const x = e.offsetX*(textLayerHeight/windowHeight)-((1/4) * img.width*(200/img.width));
-                      const y = e.offsetY*(textLayerHeight/windowHeight)-((1/4) * img.height*(200/img.width));
-                        ctx.drawImage(img, x, y,img.width*(200/img.width),img.height*(200/img.width));
 
-                    };
-                    img.src = data;
+                    // if (!annotationLayer) {
+                        
+                    // }
+                    // const img = new Image();
+                    const textLayer = document.getElementsByClassName('textLayer');
+                    // const textLayerHeight = document.getElementsByClassName('textLayer')[0].offsetHeight;
+                    // console.log('textLayerHeight',textLayerHeight)
+                    // console.log('coef',textLayerHeight/windowHeight)
+                    // img.onload = () => {
+                      //   const x = e.offsetX*(ctx.canvas.width/canvas[0].offsetWidth)-((1/4) * img.width*(200/img.width));
+                      //   const y = e.offsetY*(ctx.canvas.height/canvas[0].offsetHeight)-((1/4) * img.height*(200/img.width));
+                      //   ctx.drawImage(img, x, y,img.width*(200/img.width),img.height*(200/img.width));
+                      // };
+                      // img.src = data;
+                    const img = document.createElement('img');
+                    img.src = data as string;
+                    annot?.appendChild(img)
+
                     if (textLayer) {
                         for(let  i = 0; i < textLayer.length; i++){
-                            textLayer[i].style.display = '';
+                          (textLayer[i] as HTMLElement).style.display = '';
                         }
                     }
-                    const annotationLayer = document.getElementsByClassName('annotationLayer');
                     if (annotationLayer) {
                         for(let  i = 0; i < annotationLayer.length; i++){
-                            annotationLayer[i].style.display = '';
+                          (annotationLayer[i] as HTMLElement).style.display = '';
                         }
                     }
 
                 });
             }
             const images = document.getElementsByClassName('signature_item');
+            const clientX = ref(0)
+            const clientY = ref(0)
             if (images) {
                 for(let  i = 0; i < images.length; i++){
-                    images[i].addEventListener("touchmove", (e)=> {
+                    images[i].addEventListener("touchstart", (e : any)=> {
+                      clientX.value = e.touches[0].clientX;
+                      clientY.value = e.touches[0].clientY;
+                    });
+                    images[i].addEventListener("touchmove", (e : any)=> {
                       const touchLocation = e.targetTouches[0];
                       e.preventDefault();
                     });
-                    images[i].addEventListener("touchend", (e)=> {
-                      console.log("touchend")
+                    images[i].addEventListener("touchend", (e : any)=> {
                       const ctx = canvas[0].getContext('2d');
+                      // console.log("ctx",ctx)
                       const touchLocation = e.changedTouches[0];
-                      console.log("touchLocation",touchLocation)
-                      console.log("ctx.canvas.width",ctx.canvas.width)
+                      // console.log("touchLocation",touchLocation)
+                      // console.log("ctx.canvas.width",ctx.canvas.width)
                       const imgMobile = new Image();
+                      // console.log("clientX",clientX.value)
+                      // console.log("clientY",clientY.value)
+                      // console.log("touchLocation.pageX",touchLocation.clientX)
+                      // console.log("touchLocation.pageY",touchLocation.clientY)
+                      console.log('touchLocation.pageX',touchLocation.pageX);
+                      console.log('touchLocation.pageY',touchLocation.pageY);
+
+
+
+                      const canvasRect = canvas[0].getBoundingClientRect();
+                      console.log("canvasRect",canvasRect)
                       imgMobile.onload = () => {
-                        // const x = touchLocation.pageX*(ctx.canvas.width/canvas[0].offsetWidth)-((1/4) * imgMobile.width*(200/imgMobile.width));
-                        // const y = touchLocation.pageY*(ctx.canvas.width/canvas[0].offsetWidth)-((1/4) * imgMobile.width*(200/imgMobile.width)+ document.getElementById('myPdf').offsetTop);
-                        const offsetTop = window.offsetTop;
-                        
-                        const textLayer = document.getElementsByClassName('textLayer');
-                        const textLayerHeight = document.getElementsByClassName('textLayer')[0].offsetHeight;
-                        console.log('textLayerHeight',textLayerHeight)
-                    console.log('coef',textLayerHeight/windowHeight)
-                        const x = touchLocation.pageX*(ctx.canvas.width/canvas[0].offsetWidth)-((1/4) * imgMobile.width*(200/imgMobile.width));
-                        const y = touchLocation.pageY*(textLayerHeight/canvas[0].offsetWidth)-((1/4) * imgMobile.width*(200/imgMobile.width)+ document.getElementById('myPdf').offsetTop);
-                        
-                        const offsetY = ctx.drawImage(imgMobile, x, y,imgMobile.width*(200/imgMobile.width),imgMobile.height*(200/imgMobile.width));
+                        if (ctx != null){
+                          
+                          const x = (touchLocation.pageX)*(ctx.canvas.width/canvas[0].offsetWidth)-((1/4) * imgMobile.width*(200/imgMobile.width));
+                          const y = (touchLocation.pageY)*(ctx.canvas.width/canvas[0].offsetWidth)-((1/2) * imgMobile.width*(200/imgMobile.width));
+                          // const offsetTop = window.offsetTop;
+                          // const pdfWidth = document.getElementById('myPdf').offsetWidth;
+                          // console.log("pdfWidth",pdfWidth)
+                          // const coef = (window.innerWidth)/pdfWidth;
+                          // console.log("coef",coef)
+                          // const textLayerHeight = document.getElementsByClassName('textLayer')[0].offsetHeight;
+                          // console.log('textLayerHeight',textLayerHeight)
+                          // console.log(touchLocation);
+                          // const canvasRect = canvas[0].getBoundingClientRect();
+                          // console.log('cavasRect',canvasRect)
+                          // const x = (touchLocation.clientX*coef)+canvasRect.left;
+                          // const y = (touchLocation.clientY*coef)+canvasRect.top;
+                          
+                          const offsetY = ctx.drawImage(imgMobile, x, y,imgMobile.width*(200/imgMobile.width),imgMobile.height*(200/imgMobile.width));
+                        }
                       };
-                      imgMobile.src = images[i].firstChild.src;
+                      imgMobile.src = (images[i].firstChild as HTMLImageElement)?.src as string;
                         e.preventDefault();
                     });
 
@@ -267,24 +305,23 @@ export default defineComponent({
             if (sig.value < 0) {
                 sig.value = 0;
             }
-            carousel(sig.value)
+            carousel()
         };
         const nextSignature=()=> {
            if((store.getters.signatures.length)-2  <= sig.value){
              return;
             }
             sig.value += 2;
-            carousel(sig.value)
+            carousel()
 
         };
-        const carousel=(signature) =>{
+        const carousel=() =>{
             const signatures = document.querySelectorAll('.signature_item');
             for (let i = 0; i < signatures.length; i++) {
-                signatures[i].style.display = 'none';
+                (signatures[i] as HTMLElement).style.display = 'none';
             }
 
         }
-        carousel(sig.value)
         const OpenSignature = () => {
           const signatures = document.getElementById('signatures');
             if (signatures) {
@@ -294,9 +331,6 @@ export default defineComponent({
                 signatures.style.display = 'none';
               }
             }
-            
-           
-            
         }
 
         return {
@@ -305,20 +339,15 @@ export default defineComponent({
             currentPage,
             scale,
             myPdf,
-            enablement,
             removeCircleOutline,
             addCircleOutline,
             pdfId: route.params.id,
-            getPages,
+            handleDocumentRender,
             chevronBackOutline,
             chevronForwardOutline,
             fingerPrintOutline,
             //
-            canvasWidth,
-            canvasHeight,
-            chartList,
             offset,
-            chartId,
             //
             dragstartOutDP,
             renderPdf,
@@ -326,13 +355,26 @@ export default defineComponent({
             nextSignature,
             carousel,
             sig,
-            OpenSignature
+            OpenSignature,
+            windowHeight,
+            pdfRef,
+            isLoading,
+            showAllPages
         }
     }
 })
 </script>
 
 <style scoped>
+.vue-pdf-embed{
+  width: 100%!important;
+}
+.butn{
+  padding: 5px;
+  border-radius: 5px;
+  background-color: transparent;
+  color: #fff;
+}
 .draggable-panel {
   background-color: antiquewhite;
 }
@@ -356,10 +398,13 @@ export default defineComponent({
   margin: 10px;
 }
 .header {
-  display: flex;
+   display: flex;
   align-items: center;
-  justify-content: flex-end;
-  padding: 10px;
+  justify-content: space-between;
+  padding: 16px;
+  box-shadow: 0 2px 8px 4px rgba(0, 0, 0, 0.1);
+  background-color: #555;
+  color: #ddd;
 }
 .loop {
   border-radius: 50%;
