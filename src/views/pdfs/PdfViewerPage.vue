@@ -34,6 +34,7 @@
           :source="pdfUrl"
           :page="currentPage"
           @rendered="handleDocumentRender"
+          @vnode-updated="renderPdf"
         />
       </div>
       <div class="signatures" id="signatures">
@@ -142,40 +143,20 @@ export default defineComponent({
             offset.x = event.offsetX
             offset.y = event.offsetY
         };
-        const renderPdf = (loading : boolean) => {
-          console.log('before render',loading)
-           if (!loading){
+        const renderPdf = () => {
             console.log("renderPdf")
             const canvas = document.getElementsByTagName('canvas');
             if (canvas) {
-              const annotationLayer = document.getElementsByClassName('annotationLayer');
-
-                console.log('annotationLayer',annotationLayer);
-                if (annotationLayer.length==0) {
-                  console.log('annotationLayer');
-                  const  append = document.createElement('div')
-                  append.classList.add('annotationLayer')
-                  console.log('append',append);
-                  canvas[0].parentNode?.parentNode?.appendChild(  
-                  (append)
-                  )
-                }
-
-                canvas[0].parentNode?.parentNode?.addEventListener("dragenter", (e)=> {
+                  const annotationLayer = document.getElementsByClassName('annotationLayer');
+                canvas[0]?.parentNode?.addEventListener("dragenter", (e)=> {
                   console.log('dragenter')
-                  const textLayer = document.getElementsByClassName('textLayer');
+                  const textLayer = document.querySelectorAll('.textLayer');
                     if (textLayer) {
-                      console.log('textLayer',textLayer)
                         for(let  i = 0; i < textLayer.length; i++){
                             (textLayer[i] as HTMLElement).style.display = 'none';
                         }
                     }
-                    const annotationLayer = document.getElementsByClassName('annotationLayer');
-                    if (annotationLayer) {
-                        for(let  i = 0; i < annotationLayer.length; i++){
-                            (annotationLayer[i] as HTMLElement).style.display = 'none';
-                        }
-                    }
+                    
                     e.preventDefault();
                 });
                 canvas[0].addEventListener("dragleave", (e)=> {
@@ -186,51 +167,42 @@ export default defineComponent({
                           (textLayer[i] as HTMLElement).style.display = '';
                         }
                     }
-                    const annotationLayer = document.getElementsByClassName('annotationLayer');
-                    if (annotationLayer) {
-                        for(let  i = 0; i < annotationLayer.length; i++){
-                          (annotationLayer[i] as HTMLElement).style.display = '';
-                        }
-                    }
+                  
                     e.preventDefault();
                 });
                 canvas[0].addEventListener("dragover", (e)=> {
                     
                     e.preventDefault();
                 });
-                canvas[0].addEventListener("drop", (e)=> {
+                canvas[0]?.parentNode?.addEventListener("drop", (e : any)=> {
                     e.preventDefault();
                     const annot = document.querySelector('.annotationLayer');
                     const data = e.dataTransfer?.getData('text/plain');
-                    const ctx = canvas[0].getContext('2d');
-
-                    // if (!annotationLayer) {
-                        
-                    // }
-                    // const img = new Image();
                     const textLayer = document.getElementsByClassName('textLayer');
-                    // const textLayerHeight = document.getElementsByClassName('textLayer')[0].offsetHeight;
-                    // console.log('textLayerHeight',textLayerHeight)
-                    // console.log('coef',textLayerHeight/windowHeight)
-                    // img.onload = () => {
-                      //   const x = e.offsetX*(ctx.canvas.width/canvas[0].offsetWidth)-((1/4) * img.width*(200/img.width));
-                      //   const y = e.offsetY*(ctx.canvas.height/canvas[0].offsetHeight)-((1/4) * img.height*(200/img.width));
-                      //   ctx.drawImage(img, x, y,img.width*(200/img.width),img.height*(200/img.width));
-                      // };
-                      // img.src = data;
+                    const section = document.createElement('section');
                     const img = document.createElement('img');
+                    const spacingX = (document.querySelectorAll(".vue-pdf-embed")[0] as HTMLElement).offsetLeft * 2;
+                    const coef = (window.innerWidth- spacingX) / (canvas[0] as HTMLElement).offsetWidth;
+                    console.log('coef',coef)
+                    section.style.position = 'absolute';
                     img.src = data as string;
-                    annot?.appendChild(img)
-
-                    if (textLayer) {
-                        for(let  i = 0; i < textLayer.length; i++){
-                          (textLayer[i] as HTMLElement).style.display = '';
-                        }
-                    }
-                    if (annotationLayer) {
-                        for(let  i = 0; i < annotationLayer.length; i++){
-                          (annotationLayer[i] as HTMLElement).style.display = '';
-                        }
+                    section.style.top = (e.offsetY-img.height*(200/img.height)/4) + 'px';
+                    section.style.left = (e.offsetX-img.width*(200/img.width)/4 )+ 'px';
+                    console.log('kj',img.width)
+                    section.style.zIndex = '100';
+                    section.appendChild(img);
+                    
+                    img.style.maxWidth = img.width*(200/img.width) + 'px';
+                    img.style.maxHeight = img.height*(200/img.width) + 'px';
+                    img.onload = () => {
+                      console.log('e.offsetX',e.offsetX)
+                      annot?.appendChild(section);
+                      if (textLayer) {
+                          for(let  i = 0; i < textLayer.length; i++){
+                            (textLayer[i] as HTMLElement).style.display = '';
+                          }
+                      }
+                     
                     }
 
                 });
@@ -293,7 +265,6 @@ export default defineComponent({
 
                 }
             }
-          }
 
         };
         const sig = ref(0);
