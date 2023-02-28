@@ -132,6 +132,7 @@ export default defineComponent({
         const numPages = ref(0);
         const pdfUrl = store.getters.Pdf(pdfId).url
         const windowHeight = window.innerHeight;
+        const dragedSignature = ref();
         store.getters.Pdf(pdfId)
         const handleDocumentRender = () => {
           isLoading.value = false;
@@ -204,6 +205,31 @@ export default defineComponent({
                       }
                      
                     }
+                    section.addEventListener("dragstart", (e : any)=> {
+                      dragedSignature.value = data;
+                      e.dataTransfer!.dropEffect = 'move';
+                      e.dataTransfer!.effectAllowed ='move';
+                      e.dataTransfer?.setData(e, data);
+                    });
+                    section.addEventListener("dragend", (e)=> {
+                      if (dragedSignature.value === data) {
+                          const textLayer = document.getElementsByClassName('textLayer');
+                          if (textLayer) {
+                              for(let  i = 0; i < textLayer.length; i++){
+                                (textLayer[i] as HTMLElement).style.display = '';
+                              }
+                          }
+                          const annot = document.querySelector('.annotationLayer');
+                          annot?.removeChild(section);
+                          if (textLayer) {
+                              for(let  i = 0; i < textLayer.length; i++){
+                                (textLayer[i] as HTMLElement).style.display = 'none';
+                              }
+                          }
+                          dragedSignature.value = null;
+                      }
+                    });
+
 
                 });
             }
