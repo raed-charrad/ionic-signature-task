@@ -104,7 +104,6 @@ export default defineComponent({
         },
         showAllPages() {
             this.currentPage = this.showAllPages ? 0 : 1;
-            console.log('showAllPages',this.currentPage)
         },
     },
     computed: {
@@ -116,8 +115,7 @@ export default defineComponent({
         }
     },
     setup () {
-        console.log('setup')
-        const offset       = reactive({ x: 0, y: 0 })
+        const offset= reactive({ x: 0, y: 0 })
         //
         const pdfRef = ref();
         // 
@@ -132,136 +130,173 @@ export default defineComponent({
         const numPages = ref(0);
         const pdfUrl = store.getters.Pdf(pdfId).url
         const windowHeight = window.innerHeight;
-        const dragedSignature = ref();
-        const dragedSignatureMobile = ref();
+        const draggedSignature = ref();
+        const draggedSignatureMobile = ref();
         store.getters.Pdf(pdfId)
         const handleDocumentRender = () => {
           isLoading.value = false;
             numPages.value = pdfRef.value.pageCount;
-            console.log(pdfRef.value)
         };
         const dragstartOutDP =(event: any)=> {
-            console.log('dragstartOutDP')
             offset.x = event.offsetX
             offset.y = event.offsetY
         };
         const renderPdf = () => {
-            console.log("renderPdf")
+          const vuePdfEmbed = document.getElementsByClassName("vue-pdf-embed")
+          const canva = document.getElementsByTagName('canvas');
+          if(vuePdfEmbed.length > 0){
+            console.log(vuePdfEmbed);
+              (vuePdfEmbed[0] as HTMLElement).ontouchmove = () =>{
+             const pdf = pdfRef.value;
+             
+             console.log(+((canva[0].style.width).replace('px','')));
+             const rect = (vuePdfEmbed[0] as HTMLElement).getBoundingClientRect();
+             console.log('rect',rect);
+             const x = rect.top + window.pageYOffset;
+
+             console.log('x', Math.round(rect.top / (+((canva[0].style.width).replace('px','')))));
+             const currentPageNumber = Math.round(Math.abs(rect.top) / (+((canva[0].style.width).replace('px',''))))+1;
+             console.log('currentPageNumber',currentPageNumber);
+             
+            }
+          }
+          console.log("render")
             const canvas = document.getElementsByTagName('canvas');
             if (canvas) {
-                  const annotationLayer = document.getElementsByClassName('annotationLayer');
-                canvas[0]?.parentNode?.addEventListener("dragenter", (e)=> {
-                  console.log('dragenter')
-                  const textLayer = document.querySelectorAll('.textLayer');
-                    if (textLayer) {
-                        for(let  i = 0; i < textLayer.length; i++){
-                            (textLayer[i] as HTMLElement).style.display = 'none';
+                const annotationLayer = document.getElementsByClassName('annotationLayer');
+                  for (let can = 0; can < canvas.length; can++) {
+                    // remove all eventListeners 
+        
+                    canvas[can]?.parentNode?.removeEventListener("dragover", (e) => {
+                      console.log("dragover remove");
+                      e.preventDefault();
+                    });
+                    canvas[can]?.parentNode?.removeEventListener("dragenter", dragenter);
+                    canvas[can]?.parentNode?.removeEventListener("dragleave", dragleave);
+                    canvas[can]?.parentNode?.removeEventListener("drop", (e : any)=> {console.log('removed')});
+                    (canvas[can]!.parentNode! as HTMLElement).ondragenter= dragenter;
+                    (canvas[can]!.parentNode! as HTMLElement).ondragleave = dragleave;
+                    (canvas[can]!.parentNode! as HTMLElement).ondragover = (e)=> {e.preventDefault();};
+                    (canvas[can]!.parentNode! as HTMLElement).ondrop= (e : any)=> {
+                      e.preventDefault();
+                      const annot = document.querySelectorAll('.annotationLayer');
+                        if ( draggedSignature.value!=null){
+                        draggedSignature.value.remove();
+                        draggedSignature.value = null; 
                         }
-                    }
-                    
-                    e.preventDefault();
-                });
-                canvas[0].addEventListener("dragleave", (e)=> {
-                  console.log('dragend')
-                  const textLayer = document.getElementsByClassName('textLayer');
-                    if (textLayer) {
-                        for(let  i = 0; i < textLayer.length; i++){
-                          (textLayer[i] as HTMLElement).style.display = '';
-                        }
-                    }
-                  
-                    e.preventDefault();
-                });
-                canvas[0].addEventListener("dragover", (e)=> {
-                    
-                    e.preventDefault();
-                });
-                canvas[0]?.parentNode?.addEventListener("drop", (e : any)=> {
-                  e.preventDefault();
-                  const annot = document.querySelector('.annotationLayer');
-                    if ( dragedSignature.value!=null){
-                    dragedSignature.value.remove();
-                    dragedSignature.value = null; 
-                    }
-                    const data = e.dataTransfer?.getData('text/plain');
-                    const textLayer = document.getElementsByClassName('textLayer');
-                    const section = document.createElement('section');
-                    const img = document.createElement('img');
-                    const spacingX = (document.querySelectorAll(".vue-pdf-embed")[0] as HTMLElement).offsetLeft * 2;
-                    const coef = (window.innerWidth- spacingX) / (canvas[0] as HTMLElement).offsetWidth;
-                    console.log('coef',coef)
-                    section.style.position = 'absolute';
-                    img.src = data as string;
-                    section.style.top = (e.offsetY-img.height*(200/img.height)/4) + 'px';
-                    section.style.left = (e.offsetX-img.width*(200/img.width)/4 )+ 'px';
-                    console.log('kj',img.width)
-                    section.style.zIndex = '100';
-                    section.appendChild(img);
-                    
-                    img.style.maxWidth = img.width*(200/img.width) + 'px';
-                    img.style.maxHeight = img.height*(200/img.width) + 'px';
-                    img.onload = () => {
-                      console.log('e.offsetX',e.offsetX)
-                      annot?.appendChild(section);
-                      if (textLayer) {
-                          for(let  i = 0; i < textLayer.length; i++){
-                            (textLayer[i] as HTMLElement).style.display = '';
+                        const data = e.dataTransfer?.getData('text/plain');
+                        const textLayer = document.getElementsByClassName('textLayer');
+                        const section = document.createElement('section');
+                        const img = document.createElement('img');
+                        section.style.position = 'absolute';
+                        img.src = data as string;
+                        section.style.top = (e.offsetY-img.height*(200/img.height)/4) + 'px';
+                        section.style.left = (e.offsetX-img.width*(200/img.width)/4 )+ 'px';
+                        section.style.zIndex = '100';
+                        section.appendChild(img);
+                        img.style.maxWidth = img.width*(200/img.width) + 'px';
+                        img.style.maxHeight = img.height*(200/img.width) + 'px';
+                        img.onload = () => {
+                          annot[can].appendChild(section);
+                          if (textLayer) {
+                              for(let  i = 0; i < textLayer.length; i++){
+                                (textLayer[i] as HTMLElement).style.display = '';
+                              }
                           }
-                      }
-                     
-                    }
-                    section.addEventListener("dragstart", (e : any)=> {
-                      dragedSignature.value = section;
-                      // e.dataTransfer!.dropEffect = 'move';
-                      // e.dataTransfer!.effectAllowed ='move';
-                      // e.dataTransfer?.setData(e, data);
-                    });
-                    section.addEventListener("dragend", (e)=> {
-                        dragedSignature.value = section;
-                        console.log("dbdfbdf",dragedSignature.value);
-                      // if (dragedSignature.value === data) {
-                      //     const textLayer = document.getElementsByClassName('textLayer');
-                      //     if (textLayer) {
-                      //         for(let  i = 0; i < textLayer.length; i++){
-                      //           (textLayer[i] as HTMLElement).style.display = '';
-                      //         }
-                      //     }
-                      //     const annot = document.querySelector('.annotationLayer');
-                      //     annot?.removeChild(section);
-                      //     if (textLayer) {
-                      //         for(let  i = 0; i < textLayer.length; i++){
-                      //           (textLayer[i] as HTMLElement).style.display = 'none';
-                      //         }
-                      //     }
-                      //     dragedSignature.value = null;
-                      // }
-                    });
-                });
+                        }
+                        section.addEventListener("dragstart", (e : any)=> {
+                          draggedSignature.value = section;
+                        });
+                        section.addEventListener("dragend", (e)=> {
+                            draggedSignature.value = section;
+                        });
+                    };
+                  }
+                // }
             }
             const images = document.getElementsByClassName('signature_item');
             const clientX = ref(0)
             const clientY = ref(0)
             if (images) {
                 for(let  i = 0; i < images.length; i++){
-                    images[i].addEventListener("touchstart", (e : any)=> {
+                    images[i].removeEventListener("touchstart", (e : any)=> {
+                      draggedSignatureMobile.value = images[i];
+                    });
+                    images[i].removeEventListener("touchmove", (e : any)=> {
                       clientX.value = e.touches[0].clientX;
                       clientY.value = e.touches[0].clientY;
                     });
-                    images[i].addEventListener("touchmove", (e : any)=> {
-                      const touchLocation = e.targetTouches[0];
-                      e.preventDefault();
-                    });
-                    images[i].addEventListener("touchend", (e : any)=> {
-                      console.log("tochedSignature", dragedSignatureMobile.value);
-                      
-                      const ctx = canvas[0].getContext('2d');
+                    images[i].removeEventListener("touchend", (e : any) => {
                       const touchLocation = e.changedTouches[0];
                       const annot = document.querySelector('.annotationLayer');
                       const textLayer = document.getElementsByClassName('textLayer');
                       const section = document.createElement('section');
                       const imgMobile = document.createElement('img');
-                      const spacingX = (document.querySelectorAll(".vue-pdf-embed")[0] as HTMLElement).offsetLeft * 2;
-                      const coef = (window.innerWidth- spacingX) / (canvas[0] as HTMLElement).offsetWidth;
+                      const canvas = document.querySelector('.canvas');
+                      section.style.position = 'absolute';
+                      imgMobile.src = (images[i].firstChild as HTMLImageElement)?.src as string;
+                      // const offsetWidth = canvas.offsetleft
+                      section.style.top = (touchLocation.clientY-imgMobile.height*(200/imgMobile.height)/4) + 'px';
+                      section.style.left = (touchLocation.clientX-imgMobile.width*(200/imgMobile.width)/4 )+ 'px';
+                      section.style.zIndex = '100';
+                      imgMobile.style.maxWidth = imgMobile.width*(100/imgMobile.width) + 'px';
+                      imgMobile.style.maxHeight = imgMobile.height*(100/imgMobile.width) + 'px';
+                      section.appendChild(imgMobile);
+                      
+                      imgMobile.onload = () => {
+                        console.log(touchLocation)
+                        annot?.appendChild(section);
+                        if (textLayer) {
+                            for(let  i = 0; i < textLayer.length; i++){
+                              (textLayer[i] as HTMLElement).style.display = '';
+                            }
+                        }
+                      }
+                      section.addEventListener("touchstart", (e : any)=> {
+                        draggedSignatureMobile.value = section;
+                       
+                      });
+                      section.addEventListener("touchend", (e)=> {
+                        if (draggedSignatureMobile.value != null) {
+                          draggedSignatureMobile.value.remove();
+                          draggedSignatureMobile.value = null;
+                        }
+                        const touchLocation = e.changedTouches[0];
+                        section.style.position = 'absolute';
+                        imgMobile.src = (images[i].firstChild as HTMLImageElement)?.src as string;
+                        section.style.top = (touchLocation.clientY-imgMobile.height*(200/imgMobile.height)/4) + 'px';
+                        section.style.left = (touchLocation.clientX-imgMobile.width*(200/imgMobile.width)/4 )+ 'px';
+                        section.style.zIndex = '100';
+                        imgMobile.style.maxWidth = imgMobile.width*(100/imgMobile.width) + 'px';
+                        imgMobile.style.maxHeight = imgMobile.height*(100/imgMobile.width) + 'px';
+                        section.appendChild(imgMobile);
+                        imgMobile.onload = () => {
+                          annot?.appendChild(section);
+                          if (textLayer) {
+                              for(let  i = 0; i < textLayer.length; i++){
+                                (textLayer[i] as HTMLElement).style.display = '';
+                              }
+                          }
+                        }
+                      });
+                      e.preventDefault();
+                    });
+
+                    (images[i] as HTMLElement).ontouchstart = (e : any)=> {
+                      clientX.value = e.touches[0].clientX;
+                      clientY.value = e.touches[0].clientY;
+                    };
+                    (images[i] as HTMLElement).ontouchmove = (e : any)=> {
+                      const touchLocation = e.targetTouches[0];
+                      e.preventDefault();
+                    };
+                    (images[i] as HTMLElement).ontouchend = (e : any)=> {
+                      const touchLocation = e.changedTouches[0];
+                      const annot = document.querySelector('.annotationLayer');
+                      const textLayer = document.getElementsByClassName('textLayer');
+                      const section = document.createElement('section');
+                      const imgMobile = document.createElement('img');
+                      const canvas = document.querySelectorAll('.canvas');
                       section.style.position = 'absolute';
                       imgMobile.src = (images[i].firstChild as HTMLImageElement)?.src as string;
                       section.style.top = (touchLocation.clientY-imgMobile.height*(200/imgMobile.height)/4) + 'px';
@@ -272,6 +307,10 @@ export default defineComponent({
                       section.appendChild(imgMobile);
                       
                       imgMobile.onload = () => {
+                        console.log(touchLocation)
+                        for(let i = 0; i < canvas.length; i++){
+                          // append the section to the canvas testing by the canvas.width and canvas.height
+                        }
                         annot?.appendChild(section);
                         if (textLayer) {
                             for(let  i = 0; i < textLayer.length; i++){
@@ -280,18 +319,15 @@ export default defineComponent({
                         }
                       }
                       section.addEventListener("touchstart", (e : any)=> {
-                        dragedSignatureMobile.value = section;
-                        console.log("images",dragedSignatureMobile.value)
+                        draggedSignatureMobile.value = section;
                        
                       });
                       section.addEventListener("touchend", (e)=> {
-                        if (dragedSignatureMobile.value != null) {
-                          console.log("draged", dragedSignatureMobile.value);
-                          dragedSignatureMobile.value.remove();
-                          dragedSignatureMobile.value = null;
+                        if (draggedSignatureMobile.value != null) {
+                          draggedSignatureMobile.value.remove();
+                          draggedSignatureMobile.value = null;
                         }
                         const touchLocation = e.changedTouches[0];
-
                         section.style.position = 'absolute';
                         imgMobile.src = (images[i].firstChild as HTMLImageElement)?.src as string;
                         section.style.top = (touchLocation.clientY-imgMobile.height*(200/imgMobile.height)/4) + 'px';
@@ -300,7 +336,6 @@ export default defineComponent({
                         imgMobile.style.maxWidth = imgMobile.width*(100/imgMobile.width) + 'px';
                         imgMobile.style.maxHeight = imgMobile.height*(100/imgMobile.width) + 'px';
                         section.appendChild(imgMobile);
-                        
                         imgMobile.onload = () => {
                           annot?.appendChild(section);
                           if (textLayer) {
@@ -309,24 +344,28 @@ export default defineComponent({
                               }
                           }
                         }
-                        
                       });
-                      // const imgMobile = new Image();
-                      const canvasRect = canvas[0].getBoundingClientRect();
-                      // imgMobile.onload = () => {
-                      //   if (ctx != null){
-                      //     const x = (touchLocation.pageX)*(ctx.canvas.width/canvas[0].offsetWidth)-((1/4) * imgMobile.width*(200/imgMobile.width));
-                      //     const y = (touchLocation.pageY)*(ctx.canvas.width/canvas[0].offsetWidth)-((1/2) * imgMobile.width*(200/imgMobile.width));
-                      //     const offsetY = ctx.drawImage(imgMobile, x, y,imgMobile.width*(200/imgMobile.width),imgMobile.height*(200/imgMobile.width));
-                      //   }
-                      // };
-                      // imgMobile.src = (images[i].firstChild as HTMLImageElement)?.src as string;
-                        e.preventDefault();
-                    });
+                      e.preventDefault();
+                    };
 
                 }
             }
-
+        };
+        const dragenter = () => {
+          const textLayer = document.getElementsByClassName('textLayer');
+          if (textLayer) {
+            for(let  i = 0; i < textLayer.length; i++){
+              (textLayer[i] as HTMLElement).style.display = '';
+            }
+          }
+        };
+        const dragleave = () => {
+          const textLayer = document.getElementsByClassName('textLayer');
+          if (textLayer) {
+            for(let  i = 0; i < textLayer.length; i++){
+              (textLayer[i] as HTMLElement).style.display = 'none';
+            }
+          }
         };
         const sig = ref(0);
         const previousSignature=()=> {
@@ -391,7 +430,12 @@ export default defineComponent({
             windowHeight,
             pdfRef,
             isLoading,
-            showAllPages
+            showAllPages,
+            dragleave,
+            dragenter,
+            onscroll
+
+
         }
     }
 })
@@ -400,6 +444,10 @@ export default defineComponent({
 <style scoped>
 .vue-pdf-embed{
   width: 100%!important;
+}
+.vue-pdf-embed>div{
+  box-shadow: 2px 2px 2px 2px rgba(0, 0, 0, 0.2)!important;
+  color: #555;
 }
 .butn{
   padding: 5px;
