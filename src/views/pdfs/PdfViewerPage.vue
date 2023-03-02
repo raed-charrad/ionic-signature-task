@@ -216,83 +216,7 @@ export default defineComponent({
             const clientY = ref(0)
             if (images) {
                 for(let  i = 0; i < images.length; i++){
-                    images[i].removeEventListener("touchstart", (e : any)=> {
-                      draggedSignatureMobile.value = images[i];
-                    });
-                    images[i].removeEventListener("touchmove", (e : any)=> {
-                      clientX.value = e.touches[0].clientX;
-                      clientY.value = e.touches[0].clientY;
-                    });
-                    images[i].removeEventListener("touchend", (e : any) => {
-                      const touchLocation = e.changedTouches[0];
-                      const annot = document.querySelectorAll('.annotationLayer');
-                      console.log("annot",annot)
-
-                      const textLayer = document.getElementsByClassName('textLayer');
-                      const section = document.createElement('section');
-                      const imgMobile = document.createElement('img');
-                      const canvas = document.querySelectorAll('.canvas');
-                      section.style.position = 'absolute';
-                      imgMobile.src = (images[i].firstChild as HTMLImageElement)?.src as string;
-                      section.style.top = (touchLocation.clientY-imgMobile.height*(200/imgMobile.height)/4) + 'px';
-                      section.style.left = (touchLocation.clientX-imgMobile.width*(200/imgMobile.width)/4 )+ 'px';
-                      section.style.zIndex = '100';
-                      imgMobile.style.maxWidth = imgMobile.width*(100/imgMobile.width) + 'px';
-                      imgMobile.style.maxHeight = imgMobile.height*(100/imgMobile.width) + 'px';
-                      section.appendChild(imgMobile);
-                      
-                      imgMobile.onload = () => {
-                        if (annot.length == 1){
-                            annot[0].appendChild(section);
-                          }else{
-                            annot[currentPageNumber.value].appendChild(section);
-
-                        }
-                        if (textLayer) {
-                            for(let  i = 0; i < textLayer.length; i++){
-                              (textLayer[i] as HTMLElement).style.display = '';
-                            }
-                        }
-                      }
-                      section.addEventListener("touchstart", (e : any)=> {
-                        e.preventDefault();
-
-                        draggedSignatureMobile.value = section;
-                       
-                      });
-                      section.addEventListener("touchend", (e)=> {
-                        e.preventDefault();
-
-                        if (draggedSignatureMobile.value != null) {
-                          draggedSignatureMobile.value.remove();
-                          draggedSignatureMobile.value = null;
-                        }
-                        const touchLocation = e.changedTouches[0];
-                        section.style.position = 'absolute';
-                        imgMobile.src = (images[i].firstChild as HTMLImageElement)?.src as string;
-                        section.style.top = (touchLocation.clientY-imgMobile.height*(200/imgMobile.height)/4) + 'px';
-                        section.style.left = (touchLocation.clientX-imgMobile.width*(200/imgMobile.width)/4 )+ 'px';
-                        section.style.zIndex = '100';
-                        imgMobile.style.maxWidth = imgMobile.width*(100/imgMobile.width) + 'px';
-                        imgMobile.style.maxHeight = imgMobile.height*(100/imgMobile.width) + 'px';
-                        section.appendChild(imgMobile);
-                        imgMobile.onload = () => {
-                        
-                          if (annot.length == 1){
-                            annot[0].appendChild(section);
-                          }else{
-                            annot[currentPageNumber.value].appendChild(section);
-
-                        }
-                          if (textLayer) {
-                              for(let  i = 0; i < textLayer.length; i++){
-                                (textLayer[i] as HTMLElement).style.display = '';
-                              }
-                          }
-                        }
-                      });
-                      e.preventDefault();
-                    });
+                   
                     (images[i] as HTMLElement).ontouchstart = (e : any)=> {
                       clientX.value = e.touches[0].clientX;
                       clientY.value = e.touches[0].clientY;
@@ -305,15 +229,18 @@ export default defineComponent({
                       const touchLocation = e.changedTouches[0];
                       const annot = document.querySelectorAll('.annotationLayer');
                       console.log("annot",annot)
-
+                      console.log(touchLocation);
                       const textLayer = document.getElementsByClassName('textLayer');
                       const section = document.createElement('section');
                       const imgMobile = document.createElement('img');
-                      const canvas = document.querySelectorAll('.canvas');
+                      const canvas = document.getElementsByTagName('canvas');
+                      console.log(canvas,currentPageNumber.value);
+                      const canvasRect = (canvas[showAllPages.value?currentPageNumber.value:0]).getBoundingClientRect();
+
                       section.style.position = 'absolute';
                       imgMobile.src = (images[i].firstChild as HTMLImageElement)?.src as string;
-                      section.style.top = ((touchLocation.clientY )-imgMobile.height*(200/imgMobile.height)/4) + 'px';
-                      section.style.left = (touchLocation.clientX-imgMobile.width*(200/imgMobile.width)/4 )+ 'px';
+                      section.style.top = ((touchLocation.clientY - canvasRect.top )-imgMobile.height*(200/imgMobile.height)/4) + 'px';
+                      section.style.left = ((touchLocation.clientX - canvasRect.left)-imgMobile.width*(200/imgMobile.width)/4 )+ 'px';
                       section.style.zIndex = '100';
                       imgMobile.style.maxWidth = imgMobile.width*(100/imgMobile.width) + 'px';
                       imgMobile.style.maxHeight = imgMobile.height*(100/imgMobile.width) + 'px';
@@ -360,8 +287,7 @@ export default defineComponent({
                             annot[0].appendChild(section);
                           }else{
                             annot[currentPageNumber.value].appendChild(section);
-
-                        }
+                          }
                           if (textLayer) {
                               for(let  i = 0; i < textLayer.length; i++){
                                 (textLayer[i] as HTMLElement).style.display = '';
