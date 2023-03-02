@@ -278,8 +278,8 @@ export default defineComponent({
                         section.style.top = (touchLocation.clientY-imgMobile.height*(200/imgMobile.height)/4) + 'px';
                         section.style.left = (touchLocation.clientX-imgMobile.width*(200/imgMobile.width)/4 )+ 'px';
                         section.style.zIndex = '100';
-                        imgMobile.style.maxWidth = imgMobile.width*(100/imgMobile.width) + 'px';
-                        imgMobile.style.maxHeight = imgMobile.height*(100/imgMobile.width) + 'px';
+                        section.style.top = ((touchLocation.clientY - canvasRect.top )-imgMobile.height*(200/imgMobile.height)/4) + 'px';
+                        section.style.left = ((touchLocation.clientX - canvasRect.left)-imgMobile.width*(200/imgMobile.width)/4 )+ 'px';
                         section.appendChild(imgMobile);
                         imgMobile.onload = () => {
                         
@@ -397,7 +397,7 @@ export default defineComponent({
   width: 100%!important;
 }
 .vue-pdf-embed>div{
-  box-shadow: 2px 2px 2px 2px rgb(255, 0, 0)!important;
+  box-shadow: 2px 2px 2px 2px rgb(159, 159, 159)!important;
   color: #555;
 }
 .butn{
