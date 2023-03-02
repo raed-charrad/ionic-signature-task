@@ -45,6 +45,17 @@
           @vnode-updated="renderPdf"
         />
       </div>
+      <div class="delete-droppable-zone" v-if="showDeleteDiv">
+          <ion-icon
+            size="large"
+            class="delete-icon"
+            :icon="trashOutline"
+          ></ion-icon>
+  
+          <div class="delete-droppable-text">
+            <span>Drop here to delete signature</span>
+          </div>        
+      </div>
       <div class="signatures" id="signatures">
         <button id="prev" @click="previousSignature()" class="sig-btn">
           <ion-icon size="large" :icon="chevronBackOutline"></ion-icon>
@@ -65,7 +76,7 @@
           <ion-icon size="large" :icon="chevronForwardOutline"></ion-icon>
         </button>
       </div>
-
+      
       <ion-fab slot="fixed" vertical="bottom" horizontal="end">
         <ion-fab-button
           size="small"
@@ -75,16 +86,7 @@
           <ion-icon :icon="fingerPrintOutline"></ion-icon>
         </ion-fab-button>
       </ion-fab>
-      <ion-fab slot="fixed" vertical="bottom" horizontal="start" v-if="showDeleteFab">
-        <ion-fab-button
-          color="danger"
-          size="small"
-          id="delete-signature"
-          @click="DeleteSignature()"
-        >
-          <ion-icon :icon="trashOutline"></ion-icon>
-        </ion-fab-button>
-      </ion-fab>
+      
     </ion-content>
   </ion-page>
 </template>
@@ -162,7 +164,7 @@ export default defineComponent({
     const draggedSignature = ref();
     const draggedSignatureMobile = ref();
     const currentPageNumber = ref(0);
-    const showDeleteFab = ref(false);
+    const showDeleteDiv = ref(false);
     const deletedSig = ref();
     const openSignatureDiv = ref(false);
     store.getters.Pdf(pdfId);
@@ -328,6 +330,7 @@ export default defineComponent({
               e.preventDefault();
               draggedSignatureMobile.value = section;
               openSignatureDiv.value = true;
+              showDeleteDiv.value = true;
               OpenSignature();
             });
             section.addEventListener("touchend", (e) => {
@@ -374,22 +377,57 @@ export default defineComponent({
                   }
                 }
               };
+              const deleteZone = document.querySelector(".delete-droppable-zone");
+              console.log(deleteZone);
+              if (deleteZone) {
+                console.log("azeae",deleteZone);
+
+                // deleteZone.addEventListener("touchmove", (e) => {
+                //   section.remove();
+                //   store.dispatch("deleteSignature", {
+                //     pdfId: pdfId,
+                //     page: currentPageNumber.value,
+                //     position: {
+                //       x: touchLocation.clientX,
+                //       y: touchLocation.clientY,
+                //     },
+                //   });
+                //   showDeleteDiv.value = false;
+                // });
+                // test if the signature is in the delete zone
+                const deleteZoneRect = deleteZone.getBoundingClientRect();
+                if (
+                  touchLocation.clientX >= deleteZoneRect.left &&
+                  touchLocation.clientX <= deleteZoneRect.right && 
+                  touchLocation.clientY >=deleteZoneRect.top &&
+                  touchLocation.clientY <=deleteZoneRect.bottom
+                ) {
+                  section.remove();
+                  store.dispatch("deleteSignature", {
+                    pdfId: pdfId,
+                    page: currentPageNumber.value,
+                    position: {
+                      x: touchLocation.clientX,
+                      y: touchLocation.clientY,
+                    },
+                  });
+                  showDeleteDiv.value = false;
+                  // OpenSignature();
+                  // section.remove();
+                  // store.dispatch("deleteSignature", {
+                  //   pdfId: pdfId,
+                  //   page: currentPageNumber.value,
+                  //   position: {
+                  //     x: touchLocation.clientX,
+                  //     y: touchLocation.clientY,
+                  //   },
+                  // });
+                  // showDeleteDiv.value = false;
+                  // OpenSignature();
+                  // return;
+                }
+              }
             });
-            section.onclick = ()=>{
-              // showDeleteFab.value equels to the opposite of the current value
-              showDeleteFab.value =!showDeleteFab.value;
-              if (showDeleteFab.value) {
-                section.style.opacity = "1";
-              } else {
-                section.style.opacity = "0.5";
-              }
-              // deletedSig.value contains the pdfId, page and position of the signature and the signature itself
-              deletedSig.value =  {
-                pdfId: pdfId,
-                signature: imgMobile.src,
-              }
-              console.log(deletedSig.value);
-            } 
             isDragging.value = false;
             draggedImg.remove();
             e.preventDefault();
@@ -503,7 +541,7 @@ export default defineComponent({
       currentPageNumber,
       DeleteSignature,
       trashOutline,
-      showDeleteFab
+      showDeleteDiv
     };
   },
 });
@@ -589,5 +627,17 @@ export default defineComponent({
 .sig-btn {
   background-color: transparent;
   margin: 20px;
+}
+.delete-droppable-zone {
+  position: fixed;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 20%;
+  background-color: #ff0000;
+  opacity: 0.5;
+  color: #fff;
 }
 </style>
