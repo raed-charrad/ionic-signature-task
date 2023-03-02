@@ -75,6 +75,16 @@
           <ion-icon :icon="fingerPrintOutline"></ion-icon>
         </ion-fab-button>
       </ion-fab>
+      <ion-fab slot="fixed" vertical="bottom" horizontal="start" v-if="showDeleteFab">
+        <ion-fab-button
+          color="danger"
+          size="small"
+          id="delete-signature"
+          @click="DeleteSignature()"
+        >
+          <ion-icon :icon="trashOutline"></ion-icon>
+        </ion-fab-button>
+      </ion-fab>
     </ion-content>
   </ion-page>
 </template>
@@ -87,11 +97,12 @@ import VuePdfEmbed from "vue-pdf-embed";
 import {
   IonContent,
   IonIcon,
-  IonButton,
+  IonAlert,
   IonPage,
   IonFab,
   IonFabButton,
   IonImg,
+  alertController,
 } from "@ionic/vue";
 import { onMounted, ref, reactive } from "vue";
 import {
@@ -100,6 +111,7 @@ import {
   chevronForwardOutline,
   chevronBackOutline,
   fingerPrintOutline,
+  trashOutline,
 } from "ionicons/icons";
 import { useRoute } from "vue-router";
 import store from "@/store";
@@ -136,12 +148,9 @@ export default defineComponent({
   },
   setup() {
     const offset = reactive({ x: 0, y: 0 });
-    //
     const pdfRef = ref();
-    //
     const isLoading = ref(true);
     const showAllPages = ref(false);
-    //
     const route = useRoute();
     const myPdf = ref(null);
     const scale = ref(1);
@@ -153,6 +162,9 @@ export default defineComponent({
     const draggedSignature = ref();
     const draggedSignatureMobile = ref();
     const currentPageNumber = ref(0);
+    const showDeleteFab = ref(false);
+    const deletedSig = ref();
+    const openSignatureDiv = ref(false);
     store.getters.Pdf(pdfId);
     const handleDocumentRender = () => {
       isLoading.value = false;
@@ -162,40 +174,25 @@ export default defineComponent({
       offset.x = event.offsetX;
       offset.y = event.offsetY;
     };
-    const renderPdf = () => {
-      console.log("currentPageNumber", currentPageNumber.value);
-      currentPageNumber.value = currentPage.value;
-      console.log("currentPageNumber", currentPageNumber.value);
 
+    const renderPdf = () => {
+      console.log(openSignatureDiv.value)
+      currentPageNumber.value = currentPage.value;
       const vuePdfEmbed = document.getElementsByClassName("vue-pdf-embed");
       const canva = document.getElementsByTagName("canvas");
       if (vuePdfEmbed.length > 0) {
-        console.log(vuePdfEmbed);
         (vuePdfEmbed[0] as HTMLElement).ontouchmove = () => {
           const rect = (vuePdfEmbed[0] as HTMLElement).getBoundingClientRect();
           currentPageNumber.value = Math.round(
             Math.abs(rect.top) / +canva[0].style.height.replace("px", "")
           );
-          console.log("currentPageNumber", currentPageNumber);
         };
       }
-      console.log("render");
       const canvas = document.getElementsByTagName("canvas");
       if (canvas) {
         const annotationLayer =
           document.getElementsByClassName("annotationLayer");
         for (let can = 0; can < canvas.length; can++) {
-          // remove all eventListeners
-
-          canvas[can]?.parentNode?.removeEventListener("dragover", (e) => {
-            console.log("dragover remove");
-            e.preventDefault();
-          });
-          canvas[can]?.parentNode?.removeEventListener("dragenter", dragenter);
-          canvas[can]?.parentNode?.removeEventListener("dragleave", dragleave);
-          canvas[can]?.parentNode?.removeEventListener("drop", (e: any) => {
-            console.log("removed");
-          });
           (canvas[can]!.parentNode! as HTMLElement).ondragenter = dragenter;
           (canvas[can]!.parentNode! as HTMLElement).ondragleave = dragleave;
           (canvas[can]!.parentNode! as HTMLElement).ondragover = (e) => {
@@ -238,7 +235,6 @@ export default defineComponent({
             });
           };
         }
-        // }
       }
       const images = document.getElementsByClassName("signature_item");
       const clientX = ref(0);
@@ -278,13 +274,10 @@ export default defineComponent({
           (images[i] as HTMLElement).ontouchend = (e: any) => {
             const touchLocation = e.changedTouches[0];
             const annot = document.querySelectorAll(".annotationLayer");
-            console.log("annot", annot);
-            console.log(touchLocation);
             const textLayer = document.getElementsByClassName("textLayer");
             const section = document.createElement("section");
             const imgMobile = document.createElement("img");
             const canvas = document.getElementsByTagName("canvas");
-            console.log(canvas, currentPageNumber.value);
             const canvasRect =
               canvas[
                 showAllPages.value ? currentPageNumber.value : 0
@@ -316,6 +309,15 @@ export default defineComponent({
               } else {
                 annot[currentPageNumber.value].appendChild(section);
               }
+              store.dispatch("signPdf", {
+                pdfId: pdfId,
+                page: currentPageNumber.value,
+                signature: imgMobile.src,
+                position: {
+                  x: touchLocation.clientX,
+                  y: touchLocation.clientY,
+                },
+              });
               if (textLayer) {
                 for (let i = 0; i < textLayer.length; i++) {
                   (textLayer[i] as HTMLElement).style.display = "";
@@ -325,8 +327,11 @@ export default defineComponent({
             section.addEventListener("touchstart", (e: any) => {
               e.preventDefault();
               draggedSignatureMobile.value = section;
+              openSignatureDiv.value = true;
+              OpenSignature();
             });
             section.addEventListener("touchend", (e) => {
+
               e.preventDefault();
 
               if (draggedSignatureMobile.value != null) {
@@ -370,6 +375,21 @@ export default defineComponent({
                 }
               };
             });
+            section.onclick = ()=>{
+              // showDeleteFab.value equels to the opposite of the current value
+              showDeleteFab.value =!showDeleteFab.value;
+              if (showDeleteFab.value) {
+                section.style.opacity = "1";
+              } else {
+                section.style.opacity = "0.5";
+              }
+              // deletedSig.value contains the pdfId, page and position of the signature and the signature itself
+              deletedSig.value =  {
+                pdfId: pdfId,
+                signature: imgMobile.src,
+              }
+              console.log(deletedSig.value);
+            } 
             isDragging.value = false;
             draggedImg.remove();
             e.preventDefault();
@@ -418,14 +438,38 @@ export default defineComponent({
       }
     };
     const OpenSignature = () => {
+      openSignatureDiv.value =!openSignatureDiv.value;
       const signatures = document.getElementById("signatures");
       if (signatures) {
-        if (signatures.style.display === "none") {
+        if (openSignatureDiv.value == true) {
           signatures.style.display = "flex";
         } else {
           signatures.style.display = "none";
         }
       }
+    };
+    const DeleteSignature = () => {
+        const alert = alertController.create({
+          header: "Delete Signature",
+          message: "Are you sure you want to delete this signature?",
+          buttons: [
+            {
+              text: "Yes",
+              handler: () => {
+                store.dispatch("deleteSignatureFromPdf", {
+                  pdfId: pdfId,
+                  signature: deletedSig.value.signature,
+                });
+              },
+            },
+            {
+              text: "No",
+              handler: () => {
+                return;
+              },
+            },
+          ],
+        })
     };
 
     return {
@@ -441,9 +485,7 @@ export default defineComponent({
       chevronBackOutline,
       chevronForwardOutline,
       fingerPrintOutline,
-      //
       offset,
-      //
       dragstartOutDP,
       renderPdf,
       previousSignature,
@@ -459,6 +501,9 @@ export default defineComponent({
       dragenter,
       onscroll,
       currentPageNumber,
+      DeleteSignature,
+      trashOutline,
+      showDeleteFab
     };
   },
 });
