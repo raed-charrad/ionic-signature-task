@@ -1,5 +1,12 @@
 <template>
   <ion-page>
+    <ion-header>
+      <ion-toolbar>
+        <ion-buttons slot="start">
+          <ion-back-button default-href="/list" text=" " :icon="chevronBackOutline"></ion-back-button>
+        </ion-buttons>
+      </ion-toolbar>
+    </ion-header>
     <ion-content class="content">
       <div class="header">
         <template v-if="isLoading"> Loading... </template>
@@ -96,15 +103,7 @@ import { defineComponent } from "vue";
 // import pdf   from 'pdfvuer';
 import VuePdfEmbed from "vue-pdf-embed";
 
-import {
-  IonContent,
-  IonIcon,
-  IonAlert,
-  IonPage,
-  IonFab,
-  IonFabButton,
-  IonImg,
-  alertController,
+import {IonContent,IonIcon,IonPage,IonFab,IonFabButton,IonImg,alertController,IonHeader, IonToolbar, IonButtons, IonBackButton
 } from "@ionic/vue";
 import { onMounted, ref, reactive } from "vue";
 import {
@@ -113,6 +112,7 @@ import {
   chevronForwardOutline,
   chevronBackOutline,
   fingerPrintOutline,
+  caretBackOutline,
   trashOutline,
 } from "ionicons/icons";
 import { useRoute } from "vue-router";
@@ -127,6 +127,10 @@ export default defineComponent({
     IonFab,
     IonFabButton,
     IonImg,
+    IonToolbar,
+    IonButtons,
+    IonBackButton,
+    IonHeader
   },
   mounted() {
     this.scale = (window.innerWidth * 1.5) / 1000;
@@ -389,6 +393,10 @@ export default defineComponent({
                 draggedSignatureMobile.value.remove();
                 draggedSignatureMobile.value = null;
               }
+              const canvasRecti =
+              canvas[
+                showAllPages.value ? currentPageNumber.value : 0
+              ].getBoundingClientRect();
               section.style.position = "absolute";
               imgMobile.src = (images[i].firstChild as HTMLImageElement)
                 ?.src as string;
@@ -403,12 +411,12 @@ export default defineComponent({
               section.style.zIndex = "100";
               section.style.top =
                 touchLocation.clientY -
-                canvasRect.top -
+                canvasRecti.top -
                 (imgMobile.height * (200 / imgMobile.height)) / 4 +
                 "px";
               section.style.left =
                 touchLocation.clientX -
-                canvasRect.left -
+                canvasRecti.left -
                 (imgMobile.width * (200 / imgMobile.width)) / 4 +
                 "px";
               section.appendChild(imgMobile);
@@ -507,7 +515,7 @@ export default defineComponent({
           ],
         })
     };
-    
+
 
     return {
       pdfUrl,
@@ -540,7 +548,8 @@ export default defineComponent({
       currentPageNumber,
       DeleteSignature,
       trashOutline,
-      showDeleteDiv
+      showDeleteDiv,
+      caretBackOutline,
     };
   },
 });
