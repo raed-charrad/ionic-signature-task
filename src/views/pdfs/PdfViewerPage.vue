@@ -336,12 +336,39 @@ export default defineComponent({
             section.addEventListener("touchend", (e) => {
 
               e.preventDefault();
+              const touchLocation = e.changedTouches[0];
+              const deleteZone = document.querySelector(".delete-droppable-zone");
+              console.log(deleteZone);
+              if (deleteZone) {
+                console.log("azeae",deleteZone);
+                const deleteZoneRect = deleteZone.getBoundingClientRect();
+                
+                if (
+                  touchLocation.clientX >= deleteZoneRect.left &&
+                  touchLocation.clientX <= deleteZoneRect.right && 
+                  touchLocation.clientY >=deleteZoneRect.top &&
+                  touchLocation.clientY <=deleteZoneRect.bottom
+                ) {
+                    section.remove();
+                  // store.dispatch("deleteSignature", {
+                  //   pdfId: pdfId,
+                  //   page: currentPageNumber.value,
+                  //   position: {
+                  //     x: touchLocation.clientX,
+                  //     y: touchLocation.clientY,
+                  //   },
+                  // }).then(() =>{
+                    // }
+                    // );
+                    showDeleteDiv.value = false;
+                  return;
+                }
+              }
 
               if (draggedSignatureMobile.value != null) {
                 draggedSignatureMobile.value.remove();
                 draggedSignatureMobile.value = null;
               }
-              const touchLocation = e.changedTouches[0];
               section.style.position = "absolute";
               imgMobile.src = (images[i].firstChild as HTMLImageElement)
                 ?.src as string;
@@ -377,56 +404,7 @@ export default defineComponent({
                   }
                 }
               };
-              const deleteZone = document.querySelector(".delete-droppable-zone");
-              console.log(deleteZone);
-              if (deleteZone) {
-                console.log("azeae",deleteZone);
-
-                // deleteZone.addEventListener("touchmove", (e) => {
-                //   section.remove();
-                //   store.dispatch("deleteSignature", {
-                //     pdfId: pdfId,
-                //     page: currentPageNumber.value,
-                //     position: {
-                //       x: touchLocation.clientX,
-                //       y: touchLocation.clientY,
-                //     },
-                //   });
-                //   showDeleteDiv.value = false;
-                // });
-                // test if the signature is in the delete zone
-                const deleteZoneRect = deleteZone.getBoundingClientRect();
-                if (
-                  touchLocation.clientX >= deleteZoneRect.left &&
-                  touchLocation.clientX <= deleteZoneRect.right && 
-                  touchLocation.clientY >=deleteZoneRect.top &&
-                  touchLocation.clientY <=deleteZoneRect.bottom
-                ) {
-                  section.remove();
-                  store.dispatch("deleteSignature", {
-                    pdfId: pdfId,
-                    page: currentPageNumber.value,
-                    position: {
-                      x: touchLocation.clientX,
-                      y: touchLocation.clientY,
-                    },
-                  });
-                  showDeleteDiv.value = false;
-                  // OpenSignature();
-                  // section.remove();
-                  // store.dispatch("deleteSignature", {
-                  //   pdfId: pdfId,
-                  //   page: currentPageNumber.value,
-                  //   position: {
-                  //     x: touchLocation.clientX,
-                  //     y: touchLocation.clientY,
-                  //   },
-                  // });
-                  // showDeleteDiv.value = false;
-                  // OpenSignature();
-                  // return;
-                }
-              }
+              
             });
             isDragging.value = false;
             draggedImg.remove();
