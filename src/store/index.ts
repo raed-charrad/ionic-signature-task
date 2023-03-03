@@ -1,4 +1,7 @@
 import { createStore } from 'vuex'
+import { SignedPdf } from '@/models/signedPdf'
+import { ref } from 'vue';
+
 const store = createStore({
     state() {
         return {
@@ -30,17 +33,9 @@ const store = createStore({
                     signed: false,
                 },
             ],
-            signedPdfs: [
-                {
-                    idPdf: '0',
-                    signature: 0,
-                    page: 1,
-                    position: {
-                        x: 100,
-                        y: 100,
-                    },
-                }
-            ],
+            signedPdfs: <SignedPdf[]>([
+                
+            ]),
         }
     },
     mutations: {
@@ -72,7 +67,7 @@ const store = createStore({
             const pdfIndex = state.pdfs.findIndex((pdf) => pdf.id === data.pdfId)
             state.pdfs[pdfIndex].signed = true
             const signedPdf = {
-                idPdf: data.pdfId,
+                pdfId: data.pdfId,
                 signature: data.signature,
                 page: data.page,
                 position: {
@@ -80,10 +75,11 @@ const store = createStore({
                     y: data.position.y,
                 },
             }
-            state.signedPdfs.unshift(signedPdf)
+            state.signedPdfs.push(new SignedPdf(signedPdf.pdfId, signedPdf.signature, signedPdf.page, signedPdf.position))
+
         },
         deleteSignatureFromPdf(state, data) {
-            const signedPdfIndex = state.signedPdfs.findIndex((signedPdf) => signedPdf.idPdf === data.pdfId && signedPdf.signature === data.signature)
+            const signedPdfIndex = state.signedPdfs.findIndex((signedPdf) => signedPdf.pdfId === data.pdfId && signedPdf.signature === data.signature)
             state.signedPdfs.splice(signedPdfIndex, 1)
             const pdfIndex = state.pdfs.findIndex((pdf) => pdf.id === data.pdfId)
             state.pdfs[pdfIndex].signed = false
@@ -130,7 +126,7 @@ const store = createStore({
         signedPdfs(state) {
             return state.signedPdfs
         },
-        
+
     }
 })
 export default store
