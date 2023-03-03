@@ -126,7 +126,11 @@ const store = createStore({
             return (signatureId: number) => {
                 return state.signatures.find((signature) => signature.id === signatureId)
             }
-        }
+        },
+        signedPdfs(state) {
+            return state.signedPdfs
+        },
+        
     }
 })
 export default store
