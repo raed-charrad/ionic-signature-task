@@ -3,7 +3,11 @@
     <ion-header>
       <ion-toolbar>
         <ion-buttons slot="start">
-          <ion-back-button default-href="/list" text=" " :icon="chevronBackOutline"></ion-back-button>
+          <ion-back-button
+            default-href="/list"
+            text=" "
+            :icon="chevronBackOutline"
+          ></ion-back-button>
         </ion-buttons>
       </ion-toolbar>
     </ion-header>
@@ -53,15 +57,15 @@
         />
       </div>
       <div class="delete-droppable-zone" v-if="showDeleteDiv">
-          <ion-icon
-            size="large"
-            class="delete-icon"
-            :icon="trashOutline"
-          ></ion-icon>
-  
-          <div class="delete-droppable-text">
-            <span>Drop here to delete signature</span>
-          </div>        
+        <ion-icon
+          size="large"
+          class="delete-icon"
+          :icon="trashOutline"
+        ></ion-icon>
+
+        <div class="delete-droppable-text">
+          <span>Drop here to delete signature</span>
+        </div>
       </div>
       <div class="signatures" id="signatures">
         <button id="prev" @click="previousSignature()" class="sig-btn">
@@ -83,7 +87,7 @@
           <ion-icon size="large" :icon="chevronForwardOutline"></ion-icon>
         </button>
       </div>
-      
+
       <ion-fab slot="fixed" vertical="bottom" horizontal="end">
         <ion-fab-button
           size="small"
@@ -93,17 +97,27 @@
           <ion-icon :icon="fingerPrintOutline"></ion-icon>
         </ion-fab-button>
       </ion-fab>
-      
     </ion-content>
   </ion-page>
 </template>
 
 <script lang="ts">
-import { defineComponent } from "vue";
+import { defineComponent, watch } from "vue";
 // import pdf   from 'pdfvuer';
 import VuePdfEmbed from "vue-pdf-embed";
 
-import {IonContent,IonIcon,IonPage,IonFab,IonFabButton,IonImg,alertController,IonHeader, IonToolbar, IonButtons, IonBackButton
+import {
+  IonContent,
+  IonIcon,
+  IonPage,
+  IonFab,
+  IonFabButton,
+  IonImg,
+  alertController,
+  IonHeader,
+  IonToolbar,
+  IonButtons,
+  IonBackButton,
 } from "@ionic/vue";
 import { onMounted, ref, reactive } from "vue";
 import {
@@ -130,7 +144,7 @@ export default defineComponent({
     IonToolbar,
     IonButtons,
     IonBackButton,
-    IonHeader
+    IonHeader,
   },
   mounted() {
     this.scale = (window.innerWidth * 1.5) / 1000;
@@ -151,7 +165,7 @@ export default defineComponent({
     },
     signatures() {
       return store.getters.signatures;
-    }
+    },
   },
   setup() {
     const offset = reactive({ x: 0, y: 0 });
@@ -168,30 +182,179 @@ export default defineComponent({
     const windowHeight = window.innerHeight;
     const draggedSignature = ref();
     const draggedSignatureMobile = ref();
-    const currentPageNumber = ref(0);
+    const currentPageNumber = ref(1);
     const showDeleteDiv = ref(false);
     const deletedSig = ref();
     const openSignatureDiv = ref(false);
     store.getters.Pdf(pdfId);
     const signedPdf = store.getters.signedPdfs;
     // const PdfSignatures equals to an array of SignedPdf
-    const PdfSignatures = signedPdf.map((pdf : any) => {
-      return new SignedPdf(pdf.pdfId, pdf.signature, pdf.pageNumber, pdf.position);
+    const PdfSignatures = signedPdf.map((pdf: any) => {
+      return new SignedPdf(pdf.pdfId, pdf.signature, pdf.page, pdf.position);
     });
     // const PdfSignatures equals to an array of SignedPdf
 
     const handleDocumentRender = () => {
       isLoading.value = false;
       numPages.value = pdfRef.value.pageCount;
+      loadSignatures()
     };
     const dragstartOutDP = (event: any) => {
       offset.x = event.offsetX;
       offset.y = event.offsetY;
     };
 
+
+    watch(showAllPages,()=>{
+      loadSignatures()
+    });
+
+    const showSignature = (posX : number , posY : number , imgSrc : string , page : number , save : boolean)=>{
+            // const annot = document.querySelectorAll(".annotationLayer");
+            const textLayer = document.getElementsByClassName("textLayer");
+            const section = document.createElement("section");
+            const imgMobile = document.createElement("img");
+            const canvas = document.getElementsByTagName("canvas");
+            const canvasRect =
+              canvas[
+                showAllPages.value ? page-1 : currentPageNumber.value -1
+              ].getBoundingClientRect();
+              imgMobile.src = imgSrc;
+              const annot: any = [];
+              
+              section.appendChild(imgMobile);
+              imgMobile.onload = () => {
+                section.style.position = "absolute";
+                section.style.top =Math.abs(posY -canvasRect.top -(imgMobile.height * (200 / imgMobile.height)) / 4) +"px";
+                section.style.left =Math.abs(posX -canvasRect.left -(imgMobile.width * (200 / imgMobile.width)) / 4) +"px";
+                imgMobile.style.maxWidth =imgMobile.width * (100 / imgMobile.width) + "px";
+                imgMobile.style.maxHeight =imgMobile.height * (100 / imgMobile.width) + "px";
+                // annot[0].appendChild(section);
+                console.log("annot");
+                console.log(canvas);
+                for (let i = 0; i < canvas.length; i++){
+                  console.log(i);
+                  annot.push(canvas[i]?.parentNode?.lastChild)
+                }
+                console.log(annot);
+
+              if (annot.length == 1) {
+                annot[0].appendChild(section);
+                if (save){
+                  store.dispatch("signPdf", {
+                  pdfId: pdfId,
+                  page: page,
+                  signature: imgMobile.src,
+                  position: {
+                    x: posX,
+                    y: posY,
+                  },
+                });
+                }
+              } else {
+                console.log('page');
+                annot[page].appendChild(section);
+                if (save){
+                  console.log("signPdf");
+                  store.dispatch("signPdf", {
+                  pdfId: pdfId,
+                  page: page+1,
+                  signature: imgMobile.src,
+                  position: {
+                    x: posX,
+                    y: posY,
+                  },
+                });
+              }
+            }
+          }
+          section.addEventListener("touchstart", (e: any) => {
+              e.preventDefault();
+              draggedSignatureMobile.value = section;
+              openSignatureDiv.value = true;
+              showDeleteDiv.value = true;
+              OpenSignature();
+            });
+            section.addEventListener("touchend", (e) => {
+              e.preventDefault();
+              const touchLocation = e.changedTouches[0];
+              const deleteZone = document.querySelector(
+                ".delete-droppable-zone"
+              );
+              console.log(deleteZone);
+              if (deleteZone) {
+                console.log("azeae", deleteZone);
+                const deleteZoneRect = deleteZone.getBoundingClientRect();
+                if (
+                  touchLocation.clientX >= deleteZoneRect.left &&
+                  touchLocation.clientX <= deleteZoneRect.right &&
+                  touchLocation.clientY >= deleteZoneRect.top &&
+                  touchLocation.clientY <= deleteZoneRect.bottom
+                ) {
+                  section.remove();
+                  // store.dispatch("deleteSignature", {
+                  //   pdfId: pdfId,
+                  //   page: currentPageNumber.value,
+                  //   position: {
+                  //     x: touchLocation.clientX,
+                  //     y: touchLocation.clientY,
+                  //   },
+                  // }).then(() =>{
+                  // }
+                  // );
+                  showDeleteDiv.value = false;
+                  return;
+                }
+              }
+
+              if (draggedSignatureMobile.value != null) {
+                draggedSignatureMobile.value.remove();
+                draggedSignatureMobile.value = null;
+              }
+              const canvasRecti =
+                canvas[
+                  showAllPages.value ? currentPageNumber.value : 0
+                ].getBoundingClientRect();
+              section.style.position = "absolute";
+              imgMobile.src = imgSrc;
+              section.style.top = posY -(imgMobile.height * (200 / imgMobile.height)) / 4 +"px";
+              section.style.left = posX -(imgMobile.width * (200 / imgMobile.width)) / 4 +"px";
+              section.style.zIndex = "100";
+              section.style.top = posY -canvasRecti.top -(imgMobile.height * (200 / imgMobile.height)) / 4 +"px";
+              section.style.left = posX -canvasRecti.left -(imgMobile.width * (200 / imgMobile.width)) / 4 +"px";
+              section.appendChild(imgMobile);
+              imgMobile.onload = () => {
+                if (annot.length == 1) {
+                  annot[0].appendChild(section);
+                } else {
+                  annot[page].appendChild(section);
+                }
+                if (textLayer) {
+                  for (let i = 0; i < textLayer.length; i++) {
+                    (textLayer[i] as HTMLElement).style.display = "";
+                  }
+                }
+                showDeleteDiv.value = false;
+              };
+            });
+  };
+    const loadSignatures = () => {
+      currentPageNumber.value = currentPage.value;
+      if (PdfSignatures.length > 0) {
+        console.log(PdfSignatures);
+        for (let i = 0; i < PdfSignatures.length; i++) {
+          if (PdfSignatures[i].page == currentPageNumber.value && PdfSignatures[i].pdfId == pdfId) {
+            showSignature(PdfSignatures[i].position.x,PdfSignatures[i].position.y,PdfSignatures[i].signature,PdfSignatures[i].page,false);
+          }
+        }
+      }
+    }
     const renderPdf = () => {
+      // loadSignatures()
+
       currentPageNumber.value = currentPage.value;
       const vuePdfEmbed = document.getElementsByClassName("vue-pdf-embed");
+      
       const canva = document.getElementsByTagName("canvas");
       if (vuePdfEmbed.length > 0) {
         (vuePdfEmbed[0] as HTMLElement).ontouchmove = () => {
@@ -276,164 +439,78 @@ export default defineComponent({
           };
           (images[i] as HTMLElement).ontouchmove = (e: any) => {
             if (isDragging.value) {
-                  const touch = e.touches[0];
-                  const x = touch.pageX - draggedImg.width / 2;
-                  const y = touch.pageY - draggedImg.height / 2;
-                  draggedImg.style.left = x + "px";
-                  draggedImg.style.top = y + "px";
-                }
+              const touch = e.touches[0];
+              const x = touch.pageX - draggedImg.width / 2;
+              const y = touch.pageY - draggedImg.height / 2;
+              draggedImg.style.left = x + "px";
+              draggedImg.style.top = y + "px";
+            }
             e.preventDefault();
           };
           (images[i] as HTMLElement).ontouchend = (e: any) => {
             const touchLocation = e.changedTouches[0];
-            const annot = document.querySelectorAll(".annotationLayer");
-            const textLayer = document.getElementsByClassName("textLayer");
-            const section = document.createElement("section");
-            const imgMobile = document.createElement("img");
-            const canvas = document.getElementsByTagName("canvas");
-            const canvasRect =
-              canvas[
-                showAllPages.value ? currentPageNumber.value : 0
-              ].getBoundingClientRect();
-            section.style.position = "absolute";
+            showSignature(touchLocation.clientX,touchLocation.clientY,(images[i].firstChild as HTMLImageElement)?.src as string,currentPageNumber.value,true);
+            // const annot = document.querySelectorAll(".annotationLayer");
+            // const textLayer = document.getElementsByClassName("textLayer");
+            // const section = document.createElement("section");
+            // const imgMobile = document.createElement("img");
+            // const canvas = document.getElementsByTagName("canvas");
+            // const canvasRect =
+            //   canvas[
+            //     showAllPages.value ? currentPageNumber.value : 0
+            //   ].getBoundingClientRect();
+            // section.style.position = "absolute";
+
+            // imgMobile.src = (images[i].firstChild as HTMLImageElement)
+            //   ?.src as string;
+            // section.style.top =
+            //   touchLocation.clientY -
+            //   canvasRect.top -
+            //   (imgMobile.height * (200 / imgMobile.height)) / 4 +
+            //   "px";
+            // section.style.left =
+            //   touchLocation.clientX -
+            //   canvasRect.left -
+            //   (imgMobile.width * (200 / imgMobile.width)) / 4 +
+            //   "px";
+            // section.style.zIndex = "100";
+            // imgMobile.style.maxWidth =
+            //   imgMobile.width * (100 / imgMobile.width) + "px";
+            // imgMobile.style.maxHeight =
+            //   imgMobile.height * (100 / imgMobile.width) + "px";
+            // section.appendChild(imgMobile);
+
+            // imgMobile.onload = () => {
+            //   if (annot.length == 1) {
+            //     annot[0].appendChild(section);
+            //     store.dispatch("signPdf", {
+            //       pdfId: pdfId,
+            //       page: currentPageNumber.value,
+            //       signature: imgMobile.src,
+            //       position: {
+            //         x: touchLocation.clientX,
+            //         y: touchLocation.clientY,
+            //       },
+            //     });
+            //   } else {
+            //     annot[currentPageNumber.value].appendChild(section);
+            //     store.dispatch("signPdf", {
+            //       pdfId: pdfId,
+            //       page: currentPageNumber.value+1,
+            //       signature: imgMobile.src,
+            //       position: {
+            //         x: touchLocation.clientX,
+            //         y: touchLocation.clientY,
+            //       },
+            //     });
+            //   }
+            //   if (textLayer) {
+            //     for (let i = 0; i < textLayer.length; i++) {
+            //       (textLayer[i] as HTMLElement).style.display = "";
+            //     }
+            //   }
+            // };
             
-            imgMobile.src = (images[i].firstChild as HTMLImageElement)
-              ?.src as string;
-            section.style.top =
-              touchLocation.clientY -
-              canvasRect.top -
-              (imgMobile.height * (200 / imgMobile.height)) / 4 +
-              "px";
-            section.style.left =
-              touchLocation.clientX -
-              canvasRect.left -
-              (imgMobile.width * (200 / imgMobile.width)) / 4 +
-              "px";
-            section.style.zIndex = "100";
-            imgMobile.style.maxWidth =
-              imgMobile.width * (100 / imgMobile.width) + "px";
-            imgMobile.style.maxHeight =
-              imgMobile.height * (100 / imgMobile.width) + "px";
-            section.appendChild(imgMobile);
-
-            imgMobile.onload = () => {
-              if (annot.length == 1) {
-                annot[0].appendChild(section);
-              } else {
-                annot[currentPageNumber.value].appendChild(section);
-              }
-              store.dispatch("signPdf", {
-                pdfId: pdfId,
-                page: currentPageNumber.value,
-                signature: imgMobile.src,
-                position: {
-                  x: touchLocation.clientX,
-                  y: touchLocation.clientY,
-                },
-              }).then(() => {
-                const signedPdf= new SignedPdf(
-                  (pdfId as string),
-                  imgMobile.src,
-                  currentPageNumber.value,
-                  {
-                    x: touchLocation.clientX,
-                    y: touchLocation.clientY,
-                  },
-                );
-                // add signedPdf to PdfSignatures 
-                PdfSignatures.push(signedPdf);
-                console.log("PdfSignatures",PdfSignatures);
-              });
-              if (textLayer) {
-                for (let i = 0; i < textLayer.length; i++) {
-                  (textLayer[i] as HTMLElement).style.display = "";
-                }
-              }
-            };
-            section.addEventListener("touchstart", (e: any) => {
-              e.preventDefault();
-              draggedSignatureMobile.value = section;
-              openSignatureDiv.value = true;
-              showDeleteDiv.value = true;
-              OpenSignature();
-            });
-            section.addEventListener("touchend", (e) => {
-
-              e.preventDefault();
-              const touchLocation = e.changedTouches[0];
-              const deleteZone = document.querySelector(".delete-droppable-zone");
-              console.log(deleteZone);
-              if (deleteZone) {
-                console.log("azeae",deleteZone);
-                const deleteZoneRect = deleteZone.getBoundingClientRect();
-                
-                if (
-                  touchLocation.clientX >= deleteZoneRect.left &&
-                  touchLocation.clientX <= deleteZoneRect.right && 
-                  touchLocation.clientY >=deleteZoneRect.top &&
-                  touchLocation.clientY <=deleteZoneRect.bottom
-                ) {
-                    section.remove();
-                  // store.dispatch("deleteSignature", {
-                  //   pdfId: pdfId,
-                  //   page: currentPageNumber.value,
-                  //   position: {
-                  //     x: touchLocation.clientX,
-                  //     y: touchLocation.clientY,
-                  //   },
-                  // }).then(() =>{
-                    // }
-                    // );
-                    showDeleteDiv.value = false;
-                  return;
-                }
-              }
-
-              if (draggedSignatureMobile.value != null) {
-                draggedSignatureMobile.value.remove();
-                draggedSignatureMobile.value = null;
-              }
-              const canvasRecti =
-              canvas[
-                showAllPages.value ? currentPageNumber.value : 0
-              ].getBoundingClientRect();
-              section.style.position = "absolute";
-              imgMobile.src = (images[i].firstChild as HTMLImageElement)
-                ?.src as string;
-              section.style.top =
-                touchLocation.clientY -
-                (imgMobile.height * (200 / imgMobile.height)) / 4 +
-                "px";
-              section.style.left =
-                touchLocation.clientX -
-                (imgMobile.width * (200 / imgMobile.width)) / 4 +
-                "px";
-              section.style.zIndex = "100";
-              section.style.top =
-                touchLocation.clientY -
-                canvasRecti.top -
-                (imgMobile.height * (200 / imgMobile.height)) / 4 +
-                "px";
-              section.style.left =
-                touchLocation.clientX -
-                canvasRecti.left -
-                (imgMobile.width * (200 / imgMobile.width)) / 4 +
-                "px";
-              section.appendChild(imgMobile);
-              imgMobile.onload = () => {
-                if (annot.length == 1) {
-                  annot[0].appendChild(section);
-                } else {
-                  annot[currentPageNumber.value].appendChild(section);
-                }
-                if (textLayer) {
-                  for (let i = 0; i < textLayer.length; i++) {
-                    (textLayer[i] as HTMLElement).style.display = "";
-                  }
-                }
-              };
-              
-            });
             isDragging.value = false;
             draggedImg.remove();
             e.preventDefault();
@@ -482,7 +559,7 @@ export default defineComponent({
       }
     };
     const OpenSignature = () => {
-      openSignatureDiv.value =!openSignatureDiv.value;
+      openSignatureDiv.value = !openSignatureDiv.value;
       const signatures = document.getElementById("signatures");
       if (signatures) {
         if (openSignatureDiv.value == true) {
@@ -493,29 +570,28 @@ export default defineComponent({
       }
     };
     const DeleteSignature = () => {
-        const alert = alertController.create({
-          header: "Delete Signature",
-          message: "Are you sure you want to delete this signature?",
-          buttons: [
-            {
-              text: "Yes",
-              handler: () => {
-                store.dispatch("deleteSignatureFromPdf", {
-                  pdfId: pdfId,
-                  signature: deletedSig.value.signature,
-                });
-              },
+      const alert = alertController.create({
+        header: "Delete Signature",
+        message: "Are you sure you want to delete this signature?",
+        buttons: [
+          {
+            text: "Yes",
+            handler: () => {
+              store.dispatch("deleteSignatureFromPdf", {
+                pdfId: pdfId,
+                signature: deletedSig.value.signature,
+              });
             },
-            {
-              text: "No",
-              handler: () => {
-                return;
-              },
+          },
+          {
+            text: "No",
+            handler: () => {
+              return;
             },
-          ],
-        })
+          },
+        ],
+      });
     };
-
 
     return {
       pdfUrl,
