@@ -1,13 +1,13 @@
 export class SignedPdf{
-    idPdf: string;
+    pdfId: string;
     signature: string;
     page: number;
     position: {
         x: number;
         y: number;
     };
-    constructor(idPdf: string, signature: string, page: number, position: {x: number, y: number}){
-        this.idPdf = idPdf;
+    constructor(pdfId: string, signature: string, page: number, position: {x: number, y: number}){
+        this.pdfId = pdfId;
         this.signature = signature;
         this.page = page;
         this.position = position;
