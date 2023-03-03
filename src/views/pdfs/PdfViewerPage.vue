@@ -117,6 +117,7 @@ import {
 } from "ionicons/icons";
 import { useRoute } from "vue-router";
 import store from "@/store";
+import { SignedPdf } from "../../models/signedPdf";
 export default defineComponent({
   components: {
     IonContent,
@@ -146,7 +147,7 @@ export default defineComponent({
     },
     signatures() {
       return store.getters.signatures;
-    },
+    }
   },
   setup() {
     const offset = reactive({ x: 0, y: 0 });
@@ -168,6 +169,13 @@ export default defineComponent({
     const deletedSig = ref();
     const openSignatureDiv = ref(false);
     store.getters.Pdf(pdfId);
+    const signedPdf = store.getters.signedPdfs;
+    // const PdfSignatures equals to an array of SignedPdf
+    const PdfSignatures = signedPdf.map((pdf : any) => {
+      return new SignedPdf(pdf.pdfId, pdf.signature, pdf.pageNumber, pdf.position);
+    });
+    // const PdfSignatures equals to an array of SignedPdf
+
     const handleDocumentRender = () => {
       isLoading.value = false;
       numPages.value = pdfRef.value.pageCount;
@@ -178,7 +186,6 @@ export default defineComponent({
     };
 
     const renderPdf = () => {
-      console.log(openSignatureDiv.value)
       currentPageNumber.value = currentPage.value;
       const vuePdfEmbed = document.getElementsByClassName("vue-pdf-embed");
       const canva = document.getElementsByTagName("canvas");
@@ -319,6 +326,19 @@ export default defineComponent({
                   x: touchLocation.clientX,
                   y: touchLocation.clientY,
                 },
+              }).then(() => {
+                const signedPdf= new SignedPdf(
+                  (pdfId as string),
+                  imgMobile.src,
+                  currentPageNumber.value,
+                  {
+                    x: touchLocation.clientX,
+                    y: touchLocation.clientY,
+                  },
+                );
+                // add signedPdf to PdfSignatures 
+                PdfSignatures.push(signedPdf);
+                console.log("PdfSignatures",PdfSignatures);
               });
               if (textLayer) {
                 for (let i = 0; i < textLayer.length; i++) {
@@ -487,6 +507,7 @@ export default defineComponent({
           ],
         })
     };
+    
 
     return {
       pdfUrl,
