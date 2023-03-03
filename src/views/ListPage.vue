@@ -2,9 +2,6 @@
     <ion-page>
         <ion-header>
             <ion-toolbar>
-                <ion-title>
-                Header
-                </ion-title>
                 <ion-button button-fill="outline" slot="end" @click="add"
                 >
                     add
@@ -51,7 +48,6 @@ export default defineComponent({
         IonPage,
         IonContent,
         IonHeader,
-        IonTitle,
         IonToolbar,
         IonList,
         IonItemSliding,

@@ -9,7 +9,7 @@
             </ion-button>
             </ion-toolbar>
         </ion-header>
-        <ion-content>
+        <ion-content class="ion-padding">
             <ion-list>
                 <ion-item v-for="pdf in Pdfs" :key="pdf.id" :router-link="`/pdf/${pdf.id}`">
                     <ion-label>{{pdf.name}}</ion-label>
