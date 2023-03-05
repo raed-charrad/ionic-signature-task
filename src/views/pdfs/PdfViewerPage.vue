@@ -146,11 +146,6 @@ export default defineComponent({
     IonBackButton,
     IonHeader,
   },
-  mounted() {
-    this.scale = (window.innerWidth * 1.5) / 1000;
-    const signatures = document.getElementById("signatures");
-    signatures!.style.display = "none";
-  },
   watch: {
     $route(currentRoute) {
       this.pdfId = currentRoute.params.id;
@@ -206,61 +201,72 @@ export default defineComponent({
 
 
     watch(showAllPages,()=>{
+      // currentPage.value = showAllPages.value? 1 : 1;
+      console.log("showAllPages",showAllPages.value);
       loadSignatures()
     });
+    onMounted(() => {
+      console.log("mounted");
+      const vuePdfEmbed = document.getElementsByClassName("vue-pdf-embed");
+      
+      const canva = document.getElementsByTagName("canvas");
+      console.log("canva",canva);
 
+      if (vuePdfEmbed.length > 0) {
+        (vuePdfEmbed[0] as HTMLElement).ontouchmove = () => {
+          
+          const rect = (vuePdfEmbed[0] as HTMLElement).getBoundingClientRect();
+          if (canva.length == 1) {
+            currentPageNumber.value =  currentPage.value;
+          } else {
+            currentPageNumber.value = Math.round(
+              Math.abs(rect.top) / +canva[0].style.height.replace("px", "")
+              );
+          }
+          };
+        }
+    });
     const showSignature = (posX : number , posY : number , imgSrc : string , page : number , save : boolean)=>{
-            // const annot = document.querySelectorAll(".annotationLayer");
             const textLayer = document.getElementsByClassName("textLayer");
+            const canvas = document.getElementsByTagName("canvas");
+            console.log("canvas",canvas);
+            console.log("page",page);
+            console.log("showAllPages.value",showAllPages.value);
             const section = document.createElement("section");
             const imgMobile = document.createElement("img");
-            const canvas = document.getElementsByTagName("canvas");
-            console.log("currentPageNumber",currentPageNumber.value);
-            console.log("page",page);
-            console.log("showAllPages",showAllPages.value);
-            console.log("canvas",canvas[page-1]);
-            
-            const canvasRect =
-              canvas[
-                showAllPages.value ? page-1 : 0
-              ].getBoundingClientRect();
-              imgMobile.src = imgSrc;
-              const annot: any = [];
-              
+            imgMobile.src = imgSrc;
+            const annot: any = [];
+            section.appendChild(imgMobile);
+            imgMobile.onload = () => {
               for (let i = 0; i < canvas.length; i++){
-                console.log(i);
                 annot.push(canvas[i]?.parentNode?.lastChild)
               }
-              section.appendChild(imgMobile);
-              imgMobile.onload = () => {
-                section.style.position = "absolute";
+              section.style.position = "absolute";
+              imgMobile.style.maxWidth =imgMobile.width * (100 / imgMobile.width) + "px";
+              imgMobile.style.maxHeight =imgMobile.height * (100 / imgMobile.width) + "px";
+              if (annot.length == 1) {
+                const canvasRect = canvas[showAllPages.value ? page-1 : 0].getBoundingClientRect();
                 section.style.top =Math.abs(posY -canvasRect.top -(imgMobile.height * (200 / imgMobile.height)) / 4) +"px";
                 section.style.left =Math.abs(posX -canvasRect.left -(imgMobile.width * (200 / imgMobile.width)) / 4) +"px";
-                imgMobile.style.maxWidth =imgMobile.width * (100 / imgMobile.width) + "px";
-                imgMobile.style.maxHeight =imgMobile.height * (100 / imgMobile.width) + "px";
-                // annot[0].appendChild(section);
-                console.log("annot");
-                console.log(canvas);
-                console.log(annot);
-
-              if (annot.length == 1) {
                 annot[0].appendChild(section);
                 if (save){
                   store.dispatch("signPdf", {
-                  pdfId: pdfId,
-                  page: page,
-                  signature: imgMobile.src,
-                  position: {
-                    x: posX,
-                    y: posY,
-                  },
-                });
+                    pdfId: pdfId,
+                    page: page,
+                    signature: imgMobile.src,
+                    position: {
+                      x: posX,
+                      y: posY,
+                    },
+                  });
                 }
               } else {
-                console.log('page');
-                annot[page].appendChild(section);
+                console.log("annot",annot);
                 if (save){
-                  console.log("signPdf");
+                  const canvasRect = canvas[showAllPages.value ? page : 0].getBoundingClientRect();
+                  section.style.top =Math.abs(posY -(canvasRect.top /canvas.length ) -(imgMobile.height * (200 / imgMobile.height)) / 4) +"px";
+                  section.style.left =Math.abs(posX -canvasRect.left -(imgMobile.width * (200 / imgMobile.width)) / 4) +"px";
+                  annot[page].appendChild(section);
                   store.dispatch("signPdf", {
                   pdfId: pdfId,
                   page: page+1,
@@ -270,7 +276,12 @@ export default defineComponent({
                     y: posY,
                   },
                 });
-              }
+                }else{
+                  const canvasRect = canvas[showAllPages.value ? page-1 : 0].getBoundingClientRect();
+                  section.style.top =Math.abs(posY -(canvasRect.top /canvas.length ) -(imgMobile.height * (200 / imgMobile.height)) / 4) +"px";
+                  section.style.left =Math.abs(posX -canvasRect.left -(imgMobile.width * (200 / imgMobile.width)) / 4) +"px";
+                  annot[page-1].appendChild(section);
+                }
             }
           }
           section.addEventListener("touchstart", (e: any) => {
@@ -343,32 +354,21 @@ export default defineComponent({
               };
             });
   };
-    const loadSignatures = () => {
-      currentPageNumber.value = currentPage.value;
-      if (PdfSignatures.length > 0) {
-        console.log(PdfSignatures);
-        for (let i = 0; i < PdfSignatures.length; i++) {
-          if (PdfSignatures[i].page == currentPageNumber.value && PdfSignatures[i].pdfId == pdfId) {
-            showSignature(PdfSignatures[i].position.x,PdfSignatures[i].position.y,PdfSignatures[i].signature,PdfSignatures[i].page,false);
-          }
-        }
-      }
-    }
+    
     const renderPdf = () => {
-      // loadSignatures()
-
-      currentPageNumber.value = currentPage.value;
-      const vuePdfEmbed = document.getElementsByClassName("vue-pdf-embed");
       
-      const canva = document.getElementsByTagName("canvas");
-      if (vuePdfEmbed.length > 0) {
-        (vuePdfEmbed[0] as HTMLElement).ontouchmove = () => {
-          const rect = (vuePdfEmbed[0] as HTMLElement).getBoundingClientRect();
-          currentPageNumber.value = Math.round(
-            Math.abs(rect.top) / +canva[0].style.height.replace("px", "")
-          );
-        };
-      }
+      currentPageNumber.value = currentPage.value;
+      // const vuePdfEmbed = document.getElementsByClassName("vue-pdf-embed");
+      
+      // const canva = document.getElementsByTagName("canvas");
+      // if (vuePdfEmbed.length > 0) {
+      //   (vuePdfEmbed[0] as HTMLElement).ontouchmove = () => {
+      //     const rect = (vuePdfEmbed[0] as HTMLElement).getBoundingClientRect();
+      //     currentPageNumber.value = Math.round(
+      //       Math.abs(rect.top) / +canva[0].style.height.replace("px", "")
+      //       );
+      //     };
+      //   }
       const canvas = document.getElementsByTagName("canvas");
       if (canvas) {
         const annotationLayer =
@@ -523,6 +523,25 @@ export default defineComponent({
         }
       }
     };
+    const loadSignatures = () => {
+      currentPageNumber.value = currentPage.value;
+      console.log("currentPage", currentPage.value);
+      console.log("currentPageNumber", currentPageNumber.value);
+      if (PdfSignatures.length > 0) {
+        console.log(PdfSignatures);
+        for (let i = 0; i < PdfSignatures.length; i++) {
+          console.log(PdfSignatures[i].page, currentPageNumber.value, PdfSignatures[i].pdfId, pdfId)
+          if (PdfSignatures[i].pdfId == pdfId) {
+            if(PdfSignatures[i].page == currentPageNumber.value && !showAllPages.value){
+              showSignature(PdfSignatures[i].position.x,PdfSignatures[i].position.y,PdfSignatures[i].signature,PdfSignatures[i].page,false);
+            }
+            if(showAllPages.value){
+              showSignature(PdfSignatures[i].position.x,PdfSignatures[i].position.y,PdfSignatures[i].signature,PdfSignatures[i].page,false);
+            }
+          }
+        }
+      }
+    }
     const dragenter = () => {
       const textLayer = document.getElementsByClassName("textLayer");
       if (textLayer) {
