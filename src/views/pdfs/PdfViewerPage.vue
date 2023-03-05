@@ -201,20 +201,13 @@ export default defineComponent({
 
 
     watch(showAllPages,()=>{
-      // currentPage.value = showAllPages.value? 1 : 1;
-      console.log("showAllPages",showAllPages.value);
       loadSignatures()
     });
     onMounted(() => {
-      console.log("mounted");
       const vuePdfEmbed = document.getElementsByClassName("vue-pdf-embed");
-      
       const canva = document.getElementsByTagName("canvas");
-      console.log("canva",canva);
-
       if (vuePdfEmbed.length > 0) {
         (vuePdfEmbed[0] as HTMLElement).ontouchmove = () => {
-          
           const rect = (vuePdfEmbed[0] as HTMLElement).getBoundingClientRect();
           if (canva.length == 1) {
             currentPageNumber.value =  currentPage.value;
@@ -229,9 +222,6 @@ export default defineComponent({
     const showSignature = (posX : number , posY : number , imgSrc : string , page : number , save : boolean)=>{
             const textLayer = document.getElementsByClassName("textLayer");
             const canvas = document.getElementsByTagName("canvas");
-            console.log("canvas",canvas);
-            console.log("page",page);
-            console.log("showAllPages.value",showAllPages.value);
             const section = document.createElement("section");
             const imgMobile = document.createElement("img");
             imgMobile.src = imgSrc;
@@ -261,7 +251,6 @@ export default defineComponent({
                   });
                 }
               } else {
-                console.log("annot",annot);
                 if (save){
                   const canvasRect = canvas[showAllPages.value ? page : 0].getBoundingClientRect();
                   section.style.top =Math.abs(posY -(canvasRect.top /canvas.length ) -(imgMobile.height * (200 / imgMobile.height)) / 4) +"px";
@@ -294,12 +283,8 @@ export default defineComponent({
             section.addEventListener("touchend", (e) => {
               e.preventDefault();
               const touchLocation = e.changedTouches[0];
-              const deleteZone = document.querySelector(
-                ".delete-droppable-zone"
-              );
-              console.log(deleteZone);
+              const deleteZone = document.querySelector(".delete-droppable-zone");
               if (deleteZone) {
-                console.log("azeae", deleteZone);
                 const deleteZoneRect = deleteZone.getBoundingClientRect();
                 if (
                   touchLocation.clientX >= deleteZoneRect.left &&
@@ -323,27 +308,45 @@ export default defineComponent({
                 }
               }
 
-              if (draggedSignatureMobile.value != null) {
-                draggedSignatureMobile.value.remove();
-                draggedSignatureMobile.value = null;
-              }
-              const canvasRecti =
-                canvas[
-                  showAllPages.value ? currentPageNumber.value : 0
-                ].getBoundingClientRect();
-              section.style.position = "absolute";
-              imgMobile.src = imgSrc;
-              section.style.top = posY -(imgMobile.height * (200 / imgMobile.height)) / 4 +"px";
-              section.style.left = posX -(imgMobile.width * (200 / imgMobile.width)) / 4 +"px";
-              section.style.zIndex = "100";
-              section.style.top = posY -canvasRecti.top -(imgMobile.height * (200 / imgMobile.height)) / 4 +"px";
-              section.style.left = posX -canvasRecti.left -(imgMobile.width * (200 / imgMobile.width)) / 4 +"px";
+              // if (draggedSignatureMobile.value != null) {
+              //   draggedSignatureMobile.value.remove();
+              //   draggedSignatureMobile.value = null;
+              // }
+              console.log("touchend draggedSignatureMobile" , draggedSignatureMobile.value);
+              imgMobile.src = draggedSignatureMobile.value?.children[0].src;
               section.appendChild(imgMobile);
               imgMobile.onload = () => {
+                console.log("imgMobile.onload");
+                section.style.position = "absolute";
+                section.style.zIndex = "100";
                 if (annot.length == 1) {
+                  console.log("annot.length == 1");
+                  
+                  const canvasRect = canvas[showAllPages.value ? page-1 : 0].getBoundingClientRect();
+                  section.style.top =Math.abs(touchLocation.clientY -canvasRect.top -(imgMobile.height * (200 / imgMobile.height)) / 4) +"px";
+                  section.style.left =Math.abs(touchLocation.clientX -canvasRect.left -(imgMobile.width * (200 / imgMobile.width)) / 4) +"px";
                   annot[0].appendChild(section);
                 } else {
+                  if (save){
+                  const canvasRect = canvas[showAllPages.value ? page : 0].getBoundingClientRect();
+                  section.style.top =Math.abs(touchLocation.clientY -(canvasRect.top ) -(imgMobile.height * (200 / imgMobile.height)) / 4) +"px";
+                  section.style.left =Math.abs(touchLocation.clientX -canvasRect.left -(imgMobile.width * (200 / imgMobile.width)) / 4) +"px";
                   annot[page].appendChild(section);
+                //   store.dispatch("signPdf", {
+                //   pdfId: pdfId,
+                //   page: page+1,
+                //   signature: imgMobile.src,
+                //   position: {
+                //     x: posX,
+                //     y: posY,
+                //   },
+                // });
+                }else{
+                  const canvasRect = canvas[showAllPages.value ? page-1 : 0].getBoundingClientRect();
+                  section.style.top =Math.abs(touchLocation.clientY -(canvasRect.top ) -(imgMobile.height * (200 / imgMobile.height)) / 4) +"px";
+                  section.style.left =Math.abs(touchLocation.clientX -canvasRect.left -(imgMobile.width * (200 / imgMobile.width)) / 4) +"px";
+                  annot[page-1].appendChild(section);
+                }
                 }
                 if (textLayer) {
                   for (let i = 0; i < textLayer.length; i++) {
@@ -358,17 +361,6 @@ export default defineComponent({
     const renderPdf = () => {
       
       currentPageNumber.value = currentPage.value;
-      // const vuePdfEmbed = document.getElementsByClassName("vue-pdf-embed");
-      
-      // const canva = document.getElementsByTagName("canvas");
-      // if (vuePdfEmbed.length > 0) {
-      //   (vuePdfEmbed[0] as HTMLElement).ontouchmove = () => {
-      //     const rect = (vuePdfEmbed[0] as HTMLElement).getBoundingClientRect();
-      //     currentPageNumber.value = Math.round(
-      //       Math.abs(rect.top) / +canva[0].style.height.replace("px", "")
-      //       );
-      //     };
-      //   }
       const canvas = document.getElementsByTagName("canvas");
       if (canvas) {
         const annotationLayer =
@@ -455,67 +447,6 @@ export default defineComponent({
           (images[i] as HTMLElement).ontouchend = (e: any) => {
             const touchLocation = e.changedTouches[0];
             showSignature(touchLocation.clientX,touchLocation.clientY,(images[i].firstChild as HTMLImageElement)?.src as string,currentPageNumber.value,true);
-            // const annot = document.querySelectorAll(".annotationLayer");
-            // const textLayer = document.getElementsByClassName("textLayer");
-            // const section = document.createElement("section");
-            // const imgMobile = document.createElement("img");
-            // const canvas = document.getElementsByTagName("canvas");
-            // const canvasRect =
-            //   canvas[
-            //     showAllPages.value ? currentPageNumber.value : 0
-            //   ].getBoundingClientRect();
-            // section.style.position = "absolute";
-
-            // imgMobile.src = (images[i].firstChild as HTMLImageElement)
-            //   ?.src as string;
-            // section.style.top =
-            //   touchLocation.clientY -
-            //   canvasRect.top -
-            //   (imgMobile.height * (200 / imgMobile.height)) / 4 +
-            //   "px";
-            // section.style.left =
-            //   touchLocation.clientX -
-            //   canvasRect.left -
-            //   (imgMobile.width * (200 / imgMobile.width)) / 4 +
-            //   "px";
-            // section.style.zIndex = "100";
-            // imgMobile.style.maxWidth =
-            //   imgMobile.width * (100 / imgMobile.width) + "px";
-            // imgMobile.style.maxHeight =
-            //   imgMobile.height * (100 / imgMobile.width) + "px";
-            // section.appendChild(imgMobile);
-
-            // imgMobile.onload = () => {
-            //   if (annot.length == 1) {
-            //     annot[0].appendChild(section);
-            //     store.dispatch("signPdf", {
-            //       pdfId: pdfId,
-            //       page: currentPageNumber.value,
-            //       signature: imgMobile.src,
-            //       position: {
-            //         x: touchLocation.clientX,
-            //         y: touchLocation.clientY,
-            //       },
-            //     });
-            //   } else {
-            //     annot[currentPageNumber.value].appendChild(section);
-            //     store.dispatch("signPdf", {
-            //       pdfId: pdfId,
-            //       page: currentPageNumber.value+1,
-            //       signature: imgMobile.src,
-            //       position: {
-            //         x: touchLocation.clientX,
-            //         y: touchLocation.clientY,
-            //       },
-            //     });
-            //   }
-            //   if (textLayer) {
-            //     for (let i = 0; i < textLayer.length; i++) {
-            //       (textLayer[i] as HTMLElement).style.display = "";
-            //     }
-            //   }
-            // };
-            
             isDragging.value = false;
             draggedImg.remove();
             e.preventDefault();
@@ -525,12 +456,8 @@ export default defineComponent({
     };
     const loadSignatures = () => {
       currentPageNumber.value = currentPage.value;
-      console.log("currentPage", currentPage.value);
-      console.log("currentPageNumber", currentPageNumber.value);
       if (PdfSignatures.length > 0) {
-        console.log(PdfSignatures);
         for (let i = 0; i < PdfSignatures.length; i++) {
-          console.log(PdfSignatures[i].page, currentPageNumber.value, PdfSignatures[i].pdfId, pdfId)
           if (PdfSignatures[i].pdfId == pdfId) {
             if(PdfSignatures[i].page == currentPageNumber.value && !showAllPages.value){
               showSignature(PdfSignatures[i].position.x,PdfSignatures[i].position.y,PdfSignatures[i].signature,PdfSignatures[i].page,false);
