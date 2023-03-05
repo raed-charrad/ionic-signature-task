@@ -215,13 +215,22 @@ export default defineComponent({
             const section = document.createElement("section");
             const imgMobile = document.createElement("img");
             const canvas = document.getElementsByTagName("canvas");
+            console.log("currentPageNumber",currentPageNumber.value);
+            console.log("page",page);
+            console.log("showAllPages",showAllPages.value);
+            console.log("canvas",canvas[page-1]);
+            
             const canvasRect =
               canvas[
-                showAllPages.value ? page-1 : currentPageNumber.value -1
+                showAllPages.value ? page-1 : 0
               ].getBoundingClientRect();
               imgMobile.src = imgSrc;
               const annot: any = [];
               
+              for (let i = 0; i < canvas.length; i++){
+                console.log(i);
+                annot.push(canvas[i]?.parentNode?.lastChild)
+              }
               section.appendChild(imgMobile);
               imgMobile.onload = () => {
                 section.style.position = "absolute";
@@ -232,10 +241,6 @@ export default defineComponent({
                 // annot[0].appendChild(section);
                 console.log("annot");
                 console.log(canvas);
-                for (let i = 0; i < canvas.length; i++){
-                  console.log(i);
-                  annot.push(canvas[i]?.parentNode?.lastChild)
-                }
                 console.log(annot);
 
               if (annot.length == 1) {
